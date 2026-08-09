@@ -251,60 +251,65 @@ export default function App() {
         margin: '0 auto',
         padding: '1.5rem',
         flex: 1,
-        display: 'grid',
-        gridTemplateColumns: '1fr 440px',
-        gap: '1.8rem',
-        alignItems: 'start'
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1.8rem'
       }}>
-        {/* Left Hero Column: Prominent 3x4 Grid Map Canvas & Full-Width Command Sequence Bar */}
-        <section style={{ display: 'flex', flexDirection: 'column', gap: '1.4rem', alignItems: 'stretch', width: '100%' }}>
-          {/* Prominent Grid Canvas */}
-          <GridCanvas
-            numRows={numRows}
-            numCols={numCols}
-            themeKey={currentChallenge.theme || 'CLASICO'}
-            startPos={currentChallenge.start}
-            targetPos={currentChallenge.target}
-            obstacles={currentChallenge.obstacles || []}
-            currentRobotState={robotSimState}
-            penLines={activePenLines}
-            onSetStartPos={handleSetStartPos}
-            onSetTargetPos={handleSetTargetPos}
-            onToggleObstacle={handleToggleObstacle}
-            onClearCell={handleClearCell}
-          />
+        {/* Top Split Area: Prominent Grid Canvas + Right Controller Sidebar */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 440px',
+          gap: '1.8rem',
+          alignItems: 'start',
+          width: '100%'
+        }}>
+          {/* Hero Grid Canvas */}
+          <section style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+            <GridCanvas
+              numRows={numRows}
+              numCols={numCols}
+              themeKey={currentChallenge.theme || 'CLASICO'}
+              startPos={currentChallenge.start}
+              targetPos={currentChallenge.target}
+              obstacles={currentChallenge.obstacles || []}
+              currentRobotState={robotSimState}
+              penLines={activePenLines}
+              onSetStartPos={handleSetStartPos}
+              onSetTargetPos={handleSetTargetPos}
+              onToggleObstacle={handleToggleObstacle}
+              onClearCell={handleClearCell}
+            />
+          </section>
 
-          {/* Full-Width Programmed Command Sequence Bar directly under Map */}
-          <CommandSequenceBar
-            commands={currentChallenge.commands || []}
-            isPlaying={isPlaying}
-            currentStep={currentStep}
-          />
-        </section>
+          {/* Right Controller Sidebar */}
+          <aside style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+            <TaleBotController
+              commands={currentChallenge.commands || []}
+              onAddCommand={handleAddCommand}
+              onRemoveLastCommand={handleRemoveLastCommand}
+              onClearCommands={handleClearCommands}
+              onRunSimulation={handleRunSimulation}
+              onAutoSolvePath={handleAutoSolvePath}
+              isPlaying={isPlaying}
+              penMarkerActive={currentChallenge.penMarkerMode}
+              onTogglePenMarker={() => setCurrentChallenge({
+                ...currentChallenge,
+                penMarkerMode: !currentChallenge.penMarkerMode
+              })}
+            />
 
-        {/* Right Sidebar: Spacious TaleBot Controller & Shape Drawer (If active) */}
-        <aside style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-          {/* TaleBot Controller Deck */}
-          <TaleBotController
-            commands={currentChallenge.commands || []}
-            onAddCommand={handleAddCommand}
-            onRemoveLastCommand={handleRemoveLastCommand}
-            onClearCommands={handleClearCommands}
-            onRunSimulation={handleRunSimulation}
-            onAutoSolvePath={handleAutoSolvePath}
-            isPlaying={isPlaying}
-            penMarkerActive={currentChallenge.penMarkerMode}
-            onTogglePenMarker={() => setCurrentChallenge({
-              ...currentChallenge,
-              penMarkerMode: !currentChallenge.penMarkerMode
-            })}
-          />
+            {isDrawingMode && (
+              <ShapeCatalogDrawer onSelectShape={handleSelectShapeFromDrawer} />
+            )}
+          </aside>
+        </div>
 
-          {/* Shape Catalog Drawer if Drawing Mode is Active */}
-          {isDrawingMode && (
-            <ShapeCatalogDrawer onSelectShape={handleSelectShapeFromDrawer} />
-          )}
-        </aside>
+        {/* FULL WIDTH Command Sequence Bar spanning under BOTH the Map AND the Sidebar! */}
+        <CommandSequenceBar
+          commands={currentChallenge.commands || []}
+          isPlaying={isPlaying}
+          currentStep={currentStep}
+        />
       </main>
 
       {/* Modals */}
