@@ -375,10 +375,8 @@ export default function GridCanvas({
             </span>
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(4, 1fr)',
-              gap: '4px',
-              maxHeight: '120px',
-              overflowY: 'auto'
+              gridTemplateColumns: 'repeat(7, 1fr)', // 7 Columns x 2 Rows = All 14 obstacles visible at once without scroll!
+              gap: '3px'
             }}>
               {OBSTACLE_TYPES.map((obs) => {
                 const isSelected = obstacleMap.get(`${activePopoverCell.r},${activePopoverCell.c}`) === obs.id;
