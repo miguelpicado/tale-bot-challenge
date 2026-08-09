@@ -1,5 +1,5 @@
 import React from 'react';
-import { RotateCw, PlusCircle, Bookmark, FolderOpen } from 'lucide-react';
+import { RotateCw, PlusCircle, Bookmark, FolderOpen, Edit3 } from 'lucide-react';
 import TaleBotAvatar from './TaleBotAvatar';
 
 export default function Header({ 
@@ -8,6 +8,7 @@ export default function Header({
   onOpenNewChallengeModal,
   onOpenSavePrintModal,
   onOpenLibrary,
+  onOpenChallengeEditorModal,
   activeModeName = 'Reto Personalizado'
 }) {
   return (
@@ -92,6 +93,16 @@ export default function Header({
           >
             <PlusCircle size={16} color="#FF6900" />
             <span>Nuevo Reto</span>
+          </button>
+
+          {/* Edit Challenge Details Modal Trigger */}
+          <button 
+            className="tb-btn tb-btn-secondary"
+            onClick={onOpenChallengeEditorModal}
+            style={{ fontSize: '0.85rem', padding: '0.5rem 0.9rem' }}
+          >
+            <Edit3 size={16} color="#64748B" />
+            <span>Editar Ficha</span>
           </button>
 
           {/* Saved Library */}

@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { COMMAND_TYPES } from '../utils/talebotEngine';
-import { Play, RotateCcw, Trash2, Wand2, PenTool, Pause, Repeat, Mic } from 'lucide-react';
+import { Play, RotateCcw, Trash2, Wand2, PenTool, Pause } from 'lucide-react';
 
 export default function TaleBotController({
   commands = [],
@@ -14,10 +14,9 @@ export default function TaleBotController({
   penMarkerActive = false,
   onTogglePenMarker
 }) {
-  // Global Keyboard Shortcuts Listener
+  // Silent Global Keyboard Shortcuts Listener
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Don't trigger if user is typing in an input or textarea
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) {
         return;
       }
@@ -71,11 +70,11 @@ export default function TaleBotController({
     <div className="tb-card" style={{
       display: 'flex',
       flexDirection: 'column',
-      gap: '1rem',
+      gap: '1.2rem',
       width: '100%',
-      background: 'rgba(255, 255, 255, 0.95)',
-      backdropFilter: 'blur(16px)',
-      boxShadow: '0 15px 35px rgba(0,0,0,0.08), 0 5px 15px rgba(255,105,0,0.05)'
+      padding: '1.5rem',
+      background: '#FFFFFF',
+      boxShadow: '0 15px 35px rgba(0,0,0,0.06)'
     }}>
       {/* Console Header */}
       <div style={{
@@ -83,31 +82,26 @@ export default function TaleBotController({
         alignItems: 'center',
         justifyContent: 'space-between',
         borderBottom: '2px dashed #E2E8F0',
-        paddingBottom: '0.6rem'
+        paddingBottom: '0.8rem'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <span style={{ fontSize: '1.4rem' }}>🕹️</span>
-          <div>
-            <h3 style={{ fontFamily: 'Fredoka', fontSize: '1.15rem', color: '#0F172A' }}>
-              Mando de Programación TaleBot Pro
-            </h3>
-            <span style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 600 }}>
-              Usa los botones o tu teclado: <code style={{ background: '#F1F5F9', padding: '1px 5px', borderRadius: '4px' }}>[↑] [↓] [←] [→] [B] [M] [L]</code>
-            </span>
-          </div>
+          <span style={{ fontSize: '1.5rem' }}>🕹️</span>
+          <h3 style={{ fontFamily: 'Fredoka', fontSize: '1.25rem', color: '#0F172A' }}>
+            Mando TaleBot Pro
+          </h3>
         </div>
 
         {/* LED Lights sequence bar */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '5px',
+          gap: '6px',
           background: '#0F172A',
-          padding: '6px 12px',
+          padding: '6px 14px',
           borderRadius: '20px'
         }}>
           {commands.length === 0 ? (
-            <span style={{ color: '#64748B', fontSize: '0.75rem', fontWeight: 700 }}>LEDS LISTOS</span>
+            <span style={{ color: '#64748B', fontSize: '0.75rem', fontWeight: 800 }}>LEDS LISTOS</span>
           ) : (
             commands.slice(Math.max(0, commands.length - 8)).map((cmd, idx) => {
               const cmdInfo = COMMAND_TYPES[cmd.id] || COMMAND_TYPES.FORWARD;
@@ -129,11 +123,11 @@ export default function TaleBotController({
         </div>
       </div>
 
-      {/* Hardware Buttons Deck */}
+      {/* Hardware Buttons Deck (Wider & Spacious) */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(4, 1fr)',
-        gap: '0.6rem'
+        gap: '0.8rem'
       }}>
         {/* Forward */}
         <button
@@ -143,12 +137,11 @@ export default function TaleBotController({
             background: COMMAND_TYPES.FORWARD.color,
             color: COMMAND_TYPES.FORWARD.textColor,
             flexDirection: 'column',
-            padding: '0.75rem 0.4rem',
-            position: 'relative'
+            padding: '1rem 0.5rem',
+            fontSize: '0.9rem'
           }}
         >
-          <span style={{ position: 'absolute', top: '4px', right: '6px', fontSize: '0.65rem', opacity: 0.7 }}>[↑]</span>
-          <span style={{ fontSize: '1.4rem' }}>⬆️</span>
+          <span style={{ fontSize: '1.7rem' }}>⬆️</span>
           <span>Avanzar</span>
         </button>
 
@@ -160,12 +153,11 @@ export default function TaleBotController({
             background: COMMAND_TYPES.BACKWARD.color,
             color: COMMAND_TYPES.BACKWARD.textColor,
             flexDirection: 'column',
-            padding: '0.75rem 0.4rem',
-            position: 'relative'
+            padding: '1rem 0.5rem',
+            fontSize: '0.9rem'
           }}
         >
-          <span style={{ position: 'absolute', top: '4px', right: '6px', fontSize: '0.65rem', opacity: 0.7 }}>[↓]</span>
-          <span style={{ fontSize: '1.4rem' }}>⬇️</span>
+          <span style={{ fontSize: '1.7rem' }}>⬇️</span>
           <span>Atrás</span>
         </button>
 
@@ -177,12 +169,11 @@ export default function TaleBotController({
             background: COMMAND_TYPES.TURN_LEFT.color,
             color: COMMAND_TYPES.TURN_LEFT.textColor,
             flexDirection: 'column',
-            padding: '0.75rem 0.4rem',
-            position: 'relative'
+            padding: '1rem 0.5rem',
+            fontSize: '0.9rem'
           }}
         >
-          <span style={{ position: 'absolute', top: '4px', right: '6px', fontSize: '0.65rem', opacity: 0.7 }}>[←]</span>
-          <span style={{ fontSize: '1.4rem' }}>↩️</span>
+          <span style={{ fontSize: '1.7rem' }}>↩️</span>
           <span>Girar Izq.</span>
         </button>
 
@@ -194,12 +185,11 @@ export default function TaleBotController({
             background: COMMAND_TYPES.TURN_RIGHT.color,
             color: COMMAND_TYPES.TURN_RIGHT.textColor,
             flexDirection: 'column',
-            padding: '0.75rem 0.4rem',
-            position: 'relative'
+            padding: '1rem 0.5rem',
+            fontSize: '0.9rem'
           }}
         >
-          <span style={{ position: 'absolute', top: '4px', right: '6px', fontSize: '0.65rem', opacity: 0.7 }}>[→]</span>
-          <span style={{ fontSize: '1.4rem' }}>↪️</span>
+          <span style={{ fontSize: '1.7rem' }}>↪️</span>
           <span>Girar Der.</span>
         </button>
 
@@ -211,16 +201,15 @@ export default function TaleBotController({
             background: COMMAND_TYPES.DANCE.color,
             color: COMMAND_TYPES.DANCE.textColor,
             flexDirection: 'column',
-            padding: '0.7rem 0.4rem',
-            position: 'relative'
+            padding: '0.9rem 0.5rem',
+            fontSize: '0.85rem'
           }}
         >
-          <span style={{ position: 'absolute', top: '4px', right: '6px', fontSize: '0.65rem', opacity: 0.7 }}>[B]</span>
-          <span style={{ fontSize: '1.3rem' }}>💃</span>
+          <span style={{ fontSize: '1.5rem' }}>💃</span>
           <span>Bailar</span>
         </button>
 
-        {/* Sound / Mic */}
+        {/* Sound */}
         <button
           onClick={() => onAddCommand(COMMAND_TYPES.SOUND)}
           className="tb-btn"
@@ -228,16 +217,15 @@ export default function TaleBotController({
             background: COMMAND_TYPES.SOUND.color,
             color: COMMAND_TYPES.SOUND.textColor,
             flexDirection: 'column',
-            padding: '0.7rem 0.4rem',
-            position: 'relative'
+            padding: '0.9rem 0.5rem',
+            fontSize: '0.85rem'
           }}
         >
-          <span style={{ position: 'absolute', top: '4px', right: '6px', fontSize: '0.65rem', opacity: 0.7 }}>[M]</span>
-          <span style={{ fontSize: '1.3rem' }}>🔊</span>
+          <span style={{ fontSize: '1.5rem' }}>🔊</span>
           <span>Sonido</span>
         </button>
 
-        {/* Loop / Repeat */}
+        {/* Loop */}
         <button
           onClick={() => onAddCommand(COMMAND_TYPES.LOOP)}
           className="tb-btn"
@@ -245,12 +233,11 @@ export default function TaleBotController({
             background: COMMAND_TYPES.LOOP.color,
             color: COMMAND_TYPES.LOOP.textColor,
             flexDirection: 'column',
-            padding: '0.7rem 0.4rem',
-            position: 'relative'
+            padding: '0.9rem 0.5rem',
+            fontSize: '0.85rem'
           }}
         >
-          <span style={{ position: 'absolute', top: '4px', right: '6px', fontSize: '0.65rem', opacity: 0.7 }}>[L]</span>
-          <span style={{ fontSize: '1.3rem' }}>🔁</span>
+          <span style={{ fontSize: '1.5rem' }}>🔁</span>
           <span>Bucle</span>
         </button>
 
@@ -262,11 +249,11 @@ export default function TaleBotController({
             background: penMarkerActive ? '#14B8A6' : '#94A3B8',
             color: 'white',
             flexDirection: 'column',
-            padding: '0.7rem 0.4rem',
-            position: 'relative'
+            padding: '0.9rem 0.5rem',
+            fontSize: '0.85rem'
           }}
         >
-          <PenTool size={20} />
+          <PenTool size={24} />
           <span>{penMarkerActive ? 'Bajar Pen' : 'Subir Pen'}</span>
         </button>
       </div>
@@ -275,11 +262,11 @@ export default function TaleBotController({
       <div style={{
         background: '#F8FAFC',
         borderRadius: '16px',
-        padding: '0.8rem',
-        minHeight: '60px',
+        padding: '0.9rem',
+        minHeight: '68px',
         display: 'flex',
         alignItems: 'center',
-        gap: '0.5rem',
+        gap: '0.6rem',
         overflowX: 'auto',
         border: '2px inset #E2E8F0'
       }}>
@@ -288,10 +275,10 @@ export default function TaleBotController({
             width: '100%',
             textAlign: 'center',
             color: '#94A3B8',
-            fontSize: '0.85rem',
-            fontWeight: 600
+            fontSize: '0.9rem',
+            fontWeight: 700
           }}>
-            Pulsa los botones o las teclas de tu teclado para añadir comandos...
+            Pulsa los botones para añadir comandos de movimiento...
           </div>
         ) : (
           commands.map((cmd, idx) => {
@@ -304,15 +291,15 @@ export default function TaleBotController({
                 style={{
                   background: cmdInfo.color,
                   color: cmdInfo.textColor,
-                  padding: '0.4rem 0.7rem',
+                  padding: '0.45rem 0.8rem',
                   borderRadius: '12px',
-                  fontWeight: 700,
+                  fontWeight: 800,
                   fontSize: '0.85rem',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.3rem',
+                  gap: '0.4rem',
                   whiteSpace: 'nowrap',
-                  boxShadow: isStepActive ? `0 0 12px ${cmdInfo.color}` : '0 2px 4px rgba(0,0,0,0.1)',
+                  boxShadow: isStepActive ? `0 0 14px ${cmdInfo.color}` : '0 2px 5px rgba(0,0,0,0.1)',
                   transform: isStepActive ? 'scale(1.15)' : 'scale(1)',
                   transition: 'all 0.2s ease'
                 }}
@@ -320,12 +307,12 @@ export default function TaleBotController({
                 <span style={{
                   background: 'rgba(0,0,0,0.2)',
                   borderRadius: '50%',
-                  width: '18px',
-                  height: '18px',
+                  width: '20px',
+                  height: '20px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '0.65rem'
+                  fontSize: '0.7rem'
                 }}>
                   {idx + 1}
                 </span>
@@ -337,20 +324,20 @@ export default function TaleBotController({
         )}
       </div>
 
-      {/* Control Actions Bottom Bar */}
+      {/* Controller Actions Bottom Bar */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        gap: '0.6rem',
+        gap: '0.8rem',
         flexWrap: 'wrap'
       }}>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.6rem' }}>
           <button
             onClick={onRemoveLastCommand}
             className="tb-btn tb-btn-secondary"
             disabled={commands.length === 0}
-            style={{ padding: '0.5rem 0.9rem', fontSize: '0.85rem' }}
+            style={{ padding: '0.6rem 1rem', fontSize: '0.85rem' }}
           >
             <RotateCcw size={16} /> Borrar Último
           </button>
@@ -359,7 +346,7 @@ export default function TaleBotController({
             onClick={onClearCommands}
             className="tb-btn tb-btn-secondary"
             disabled={commands.length === 0}
-            style={{ padding: '0.5rem 0.9rem', fontSize: '0.85rem', color: '#EF4444' }}
+            style={{ padding: '0.6rem 1rem', fontSize: '0.85rem', color: '#EF4444' }}
           >
             <Trash2 size={16} /> Borrar Todo
           </button>
@@ -370,7 +357,7 @@ export default function TaleBotController({
             style={{
               background: 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)',
               color: 'white',
-              padding: '0.5rem 0.9rem',
+              padding: '0.6rem 1rem',
               fontSize: '0.85rem'
             }}
           >
@@ -378,19 +365,19 @@ export default function TaleBotController({
           </button>
         </div>
 
-        {/* Run Execution Button */}
+        {/* Run Button */}
         <button
           onClick={onRunSimulation}
           className="tb-btn tb-btn-green"
           disabled={commands.length === 0}
           style={{
-            padding: '0.6rem 1.6rem',
-            fontSize: '1rem',
-            boxShadow: '0 4px 14px rgba(16, 185, 129, 0.4)'
+            padding: '0.7rem 1.8rem',
+            fontSize: '1.05rem',
+            boxShadow: '0 4px 16px rgba(16, 185, 129, 0.4)'
           }}
         >
-          {isPlaying ? <Pause size={20} /> : <Play size={20} />}
-          <span>{isPlaying ? 'Pausar' : 'Probar Recorrido (Espacio)'}</span>
+          {isPlaying ? <Pause size={22} /> : <Play size={22} />}
+          <span>{isPlaying ? 'Pausar' : 'Probar Recorrido'}</span>
         </button>
       </div>
     </div>

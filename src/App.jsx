@@ -3,7 +3,7 @@ import confetti from 'canvas-confetti';
 import Header from './components/Header';
 import GridCanvas from './components/GridCanvas';
 import TaleBotController from './components/TaleBotController';
-import ChallengeEditor from './components/ChallengeEditor';
+import ChallengeEditorModal from './components/ChallengeEditorModal';
 import PrintSheetPreview from './components/PrintSheetPreview';
 import SavedLibraryModal from './components/SavedLibraryModal';
 import GoogleDriveModal from './components/GoogleDriveModal';
@@ -14,7 +14,6 @@ import ShapeCatalogDrawer from './components/ShapeCatalogDrawer';
 import { PRESET_CHALLENGES } from './utils/presets';
 import { simulatePath, solveNavigationPath, COMMAND_TYPES } from './utils/talebotEngine';
 import { saveChallengesToLocal, loadChallengesFromLocal, getSavedGoogleClientId } from './utils/storage';
-import { Save } from 'lucide-react';
 
 export default function App() {
   // Orientation: 'landscape' (3x4) or 'portrait' (4x3)
@@ -51,6 +50,7 @@ export default function App() {
   // Modals state
   const [showNewChallengeModal, setShowNewChallengeModal] = useState(false);
   const [showSavePrintModal, setShowSavePrintModal] = useState(false);
+  const [showChallengeEditorModal, setShowChallengeEditorModal] = useState(false);
   const [showPrintPreview, setShowPrintPreview] = useState(false);
   const [showLibrary, setShowLibrary] = useState(false);
   const [showDriveModal, setShowDriveModal] = useState(false);
@@ -240,6 +240,7 @@ export default function App() {
         onOpenNewChallengeModal={() => setShowNewChallengeModal(true)}
         onOpenSavePrintModal={() => setShowSavePrintModal(true)}
         onOpenLibrary={() => setShowLibrary(true)}
+        onOpenChallengeEditorModal={() => setShowChallengeEditorModal(true)}
         activeModeName={activeModeName}
       />
 
@@ -251,7 +252,7 @@ export default function App() {
         padding: '1.5rem',
         flex: 1,
         display: 'grid',
-        gridTemplateColumns: '1fr 400px',
+        gridTemplateColumns: '1fr 440px', // Wider right sidebar (440px)
         gap: '1.8rem',
         alignItems: 'start'
       }}>
@@ -273,7 +274,7 @@ export default function App() {
           />
         </section>
 
-        {/* Right Sidebar: TaleBot Controller, Shape Drawer (If active), & Details */}
+        {/* Right Sidebar: Spacious TaleBot Controller & Shape Drawer (If active) */}
         <aside style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
           {/* TaleBot Controller Deck */}
           <TaleBotController
@@ -296,23 +297,6 @@ export default function App() {
           {isDrawingMode && (
             <ShapeCatalogDrawer onSelectShape={handleSelectShapeFromDrawer} />
           )}
-
-          {/* Challenge Details Editor */}
-          <ChallengeEditor
-            challenge={currentChallenge}
-            onChangeChallenge={setCurrentChallenge}
-            onAssignToSlot={setActiveSlot}
-            currentSlot={activeSlot}
-          />
-
-          {/* Save to Local Library Button */}
-          <button
-            onClick={handleSaveToLocalLibrary}
-            className="tb-btn tb-btn-purple"
-            style={{ width: '100%', justifyContent: 'center', padding: '0.75rem' }}
-          >
-            <Save size={18} /> Guardar Reto en Mi Biblioteca
-          </button>
         </aside>
       </main>
 
@@ -327,6 +311,16 @@ export default function App() {
             setActiveModeName('Dibujo y Formas para Rotuladores');
           }}
           onClose={() => setShowNewChallengeModal(false)}
+        />
+      )}
+
+      {showChallengeEditorModal && (
+        <ChallengeEditorModal
+          challenge={currentChallenge}
+          onChangeChallenge={setCurrentChallenge}
+          onAssignToSlot={setActiveSlot}
+          currentSlot={activeSlot}
+          onClose={() => setShowChallengeEditorModal(false)}
         />
       )}
 
