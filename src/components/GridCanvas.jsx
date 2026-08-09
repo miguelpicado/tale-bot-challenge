@@ -213,6 +213,7 @@ export default function GridCanvas({
                       ledColor={currentRobotState?.ledColor || '#10B981'}
                       hasWings={hasWings}
                       hasArms={hasArms}
+                      isDancing={currentRobotState?.isDancing || currentRobotState?.commandId === 'DANCE'}
                     />
                   )}
 

@@ -20,7 +20,7 @@ export default function TaleBotAvatar({
         transition: 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
         position: 'relative'
       }}
-      className={isDancing ? 'animated-robot' : ''}
+      className={isDancing ? 'dancing-robot' : ''}
     >
       <svg
         width={size}

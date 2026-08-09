@@ -1,13 +1,16 @@
-import React from 'react';
-import { getCellLabel, COMMAND_TYPES, DIRECTIONS, OBSTACLE_TYPES } from '../utils/talebotEngine';
+import React, { useState } from 'react';
+import { getCellLabel, COMMAND_TYPES, DIRECTIONS, OBSTACLE_TYPES, simulatePath } from '../utils/talebotEngine';
 import { MAP_THEMES } from '../utils/presets';
-import { Printer, X, Scissors } from 'lucide-react';
+import { Printer, X, Scissors, Check } from 'lucide-react';
 
 export default function PrintSheetPreview({
   challenge1,
   challenge2,
   onClose
 }) {
+  // Option to include Page 3 (Cut-out obstacles sheet) - defaults to false as requested!
+  const [includeCutoutSheet, setIncludeCutoutSheet] = useState(false);
+
   const handlePrint = () => {
     window.print();
   };
@@ -18,6 +21,14 @@ export default function PrintSheetPreview({
     const numRows = ch.numRows || 3;
     const numCols = ch.numCols || 4;
     const obstacleMap = new Map((ch.obstacles || []).map(o => [`${o.r},${o.c}`, o.type || 'ALTO']));
+
+    // Pre-calculate trajectory for path stroke rendering
+    const { penLines, trajectory } = simulatePath(
+      ch.start || { r: 2, c: 0, dir: 0 },
+      ch.commands || [],
+      numRows,
+      numCols
+    );
 
     return (
       <div style={{
@@ -70,112 +81,93 @@ export default function PrintSheetPreview({
           </p>
         )}
 
-        {/* Grid Map & Command Blank Box Split */}
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', height: '100%' }}>
-          {/* Map Grid */}
+        {/* Prominent Clean Map Grid with Path Line Overlay */}
+        <div style={{
+          background: theme.bgGradient,
+          padding: '0.6rem',
+          borderRadius: '16px',
+          border: '2.5px solid #94A3B8',
+          width: '100%',
+          flex: 1,
+          position: 'relative',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
           <div style={{
-            background: theme.bgGradient,
-            padding: '0.5rem',
-            borderRadius: '14px',
-            border: '2px solid #94A3B8',
-            width: '240px',
-            aspectRatio: `${numCols} / ${numRows}`
+            display: 'grid',
+            gridTemplateRows: `repeat(${numRows}, 1fr)`,
+            gridTemplateColumns: `repeat(${numCols}, 1fr)`,
+            gap: '6px',
+            width: '100%',
+            height: '100%',
+            position: 'relative'
           }}>
-            <div style={{
-              display: 'grid',
-              gridTemplateRows: `repeat(${numRows}, 1fr)`,
-              gridTemplateColumns: `repeat(${numCols}, 1fr)`,
-              gap: '4px',
-              height: '100%'
-            }}>
-              {Array.from({ length: numRows }).map((_, r) =>
-                Array.from({ length: numCols }).map((_, c) => {
-                  const cellKey = `${r},${c}`;
-                  const isStart = ch.start.r === r && ch.start.c === c;
-                  const isTarget = ch.target && ch.target.r === r && ch.target.c === c;
-                  const obsTypeId = obstacleMap.get(cellKey);
-                  const obsObj = OBSTACLE_TYPES.find(o => o.id === obsTypeId);
-
+            {/* SVG Path Stroke Layer */}
+            {penLines && penLines.length > 0 && (
+              <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 15 }}>
+                {penLines.map((line, idx) => {
+                  const cellW = 100 / numCols;
+                  const cellH = 100 / numRows;
+                  const x1 = (line.from.c + 0.5) * cellW;
+                  const y1 = (line.from.r + 0.5) * cellH;
+                  const x2 = (line.to.c + 0.5) * cellW;
+                  const y2 = (line.to.r + 0.5) * cellH;
                   return (
-                    <div
-                      key={cellKey}
-                      style={{
-                        background: obsObj ? '#FFE4E6' : '#FFFFFF',
-                        border: '1.5px dashed #CBD5E1',
-                        borderRadius: '8px',
-                        position: 'relative',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '1.4rem'
-                      }}
-                    >
-                      <span style={{
-                        position: 'absolute',
-                        top: '2px',
-                        left: '4px',
-                        fontSize: '0.55rem',
-                        fontWeight: 800,
-                        color: '#64748B'
-                      }}>
-                        {getCellLabel(r, c)}
-                      </span>
-
-                      {isStart && (
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1 }}>
-                          <span>🤖</span>
-                          <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#00A3FF' }}>
-                            {DIRECTIONS[ch.start.dir || 0].arrow}
-                          </span>
-                        </div>
-                      )}
-
-                      {isTarget && <span>{theme.icons.target}</span>}
-                      {obsObj && <span>{obsObj.icon}</span>}
-                    </div>
+                    <line key={idx} x1={`${x1}%`} y1={`${y1}%`} x2={`${x2}%`} y2={`${y2}%`} stroke="#FF0055" strokeWidth="6" strokeLinecap="round" />
                   );
-                })
-              )}
-            </div>
-          </div>
+                })}
+              </svg>
+            )}
 
-          {/* Blank Command Write Boxes */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#334155' }}>
-              ✍️ Dibuja los comandos del robot en orden:
-            </span>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(5, 1fr)',
-              gap: '6px'
-            }}>
-              {Array.from({ length: Math.max(10, (ch.commands || []).length) }).map((_, i) => (
-                <div
-                  key={i}
-                  style={{
-                    aspectRatio: '1',
-                    border: '2px solid #94A3B8',
-                    borderRadius: '10px',
-                    background: '#F8FAFC',
-                    position: 'relative',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
-                >
-                  <span style={{
-                    position: 'absolute',
-                    top: '2px',
-                    left: '4px',
-                    fontSize: '0.55rem',
-                    fontWeight: 800,
-                    color: '#94A3B8'
-                  }}>
-                    {i + 1}
-                  </span>
-                </div>
-              ))}
-            </div>
+            {Array.from({ length: numRows }).map((_, r) =>
+              Array.from({ length: numCols }).map((_, c) => {
+                const cellKey = `${r},${c}`;
+                const isStart = ch.start.r === r && ch.start.c === c;
+                const isTarget = ch.target && ch.target.r === r && ch.target.c === c;
+                const obsTypeId = obstacleMap.get(cellKey);
+                const obsObj = OBSTACLE_TYPES.find(o => o.id === obsTypeId);
+
+                return (
+                  <div
+                    key={cellKey}
+                    style={{
+                      background: obsObj ? '#FFE4E6' : '#FFFFFF',
+                      border: '1.5px dashed #CBD5E1',
+                      borderRadius: '10px',
+                      position: 'relative',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '1.6rem'
+                    }}
+                  >
+                    <span style={{
+                      position: 'absolute',
+                      top: '3px',
+                      left: '5px',
+                      fontSize: '0.65rem',
+                      fontWeight: 800,
+                      color: '#64748B'
+                    }}>
+                      {getCellLabel(r, c)}
+                    </span>
+
+                    {isStart && (
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1 }}>
+                        <span>🤖</span>
+                        <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#00A3FF' }}>
+                          {DIRECTIONS[ch.start.dir || 0].arrow}
+                        </span>
+                      </div>
+                    )}
+
+                    {isTarget && <span>{theme.icons.target}</span>}
+                    {obsObj && <span>{obsObj.icon}</span>}
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       </div>
@@ -273,7 +265,7 @@ export default function PrintSheetPreview({
       padding: '1.5rem',
       overflowY: 'auto'
     }}>
-      {/* Top Floating Control Bar */}
+      {/* Floating Header Control Bar */}
       <div className="no-print" style={{
         background: '#FFFFFF',
         padding: '0.8rem 1.6rem',
@@ -283,17 +275,42 @@ export default function PrintSheetPreview({
         alignItems: 'center',
         justifyContent: 'space-between',
         width: '100%',
-        maxWidth: '850px',
-        marginBottom: '1.5rem'
+        maxWidth: '880px',
+        marginBottom: '1.5rem',
+        flexWrap: 'wrap',
+        gap: '0.8rem'
       }}>
         <div>
           <h3 style={{ fontFamily: 'Fredoka', color: '#0F172A', fontSize: '1.2rem' }}>
-            🖨️ Fichas A4 + Obstáculos Recortables para el Mapa Físico
+            🖨️ Fichas de Recorrido A4
           </h3>
           <p style={{ fontSize: '0.8rem', color: '#64748B', fontWeight: 600 }}>
-            Pág 1: Ejercicios | Pág 2: Soluciones | Pág 3: 12 Obstáculos recortables
+            Página 1: Mapa pintado | Página 2: Solución al reverso
           </p>
         </div>
+
+        {/* Option Checkbox to include Cut-out Obstacles Sheet */}
+        <label style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          background: '#FFF7ED',
+          border: '1.5px solid #FFEDD5',
+          padding: '0.4rem 0.8rem',
+          borderRadius: '12px',
+          cursor: 'pointer',
+          fontSize: '0.8rem',
+          fontWeight: 700,
+          color: '#C2410C'
+        }}>
+          <input
+            type="checkbox"
+            checked={includeCutoutSheet}
+            onChange={(e) => setIncludeCutoutSheet(e.target.checked)}
+            style={{ accentColor: '#FF6900', width: '16px', height: '16px' }}
+          />
+          <span>Imprimir Hoja de 12 Obstáculos Recortables (Pág 3)</span>
+        </label>
 
         <div style={{ display: 'flex', gap: '0.8rem' }}>
           <button onClick={handlePrint} className="tb-btn tb-btn-yellow">
@@ -306,9 +323,9 @@ export default function PrintSheetPreview({
         </div>
       </div>
 
-      {/* Printable Sheet Container (3 Pages for A4) */}
+      {/* Printable Sheet Pages */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', alignItems: 'center' }}>
-        {/* PAGE 1 (Front Side - Worksheets) */}
+        {/* PAGE 1 (Worksheet Front - Map with painted path) */}
         <div className="print-page" style={{
           width: '210mm',
           height: '297mm',
@@ -328,9 +345,9 @@ export default function PrintSheetPreview({
             paddingBottom: '0.5rem'
           }}>
             <h2 style={{ fontFamily: 'Fredoka', color: '#0F172A', fontSize: '1.4rem' }}>
-              🤖 TaleBot Pro - Fichas de Programación
+              🤖 TaleBot Pro - Fichas de Recorrido
             </h2>
-            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748B' }}>Página 1 / 3 (Frente)</span>
+            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748B' }}>Página 1 / {includeCutoutSheet ? '3' : '2'}</span>
           </div>
 
           {renderSingleChallengeFront(challenge1, 1)}
@@ -359,106 +376,85 @@ export default function PrintSheetPreview({
             <h2 style={{ fontFamily: 'Fredoka', color: '#065F46', fontSize: '1.4rem' }}>
               🔑 Soluciones de las Fichas (Reverso)
             </h2>
-            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748B' }}>Página 2 / 3 (Reverso)</span>
+            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748B' }}>Página 2 / {includeCutoutSheet ? '3' : '2'}</span>
           </div>
 
           {renderSingleChallengeBack(challenge1, 1)}
           {renderSingleChallengeBack(challenge2, 2)}
         </div>
 
-        {/* PAGE 3 (Printable 12 Cut-out Obstacles Sheet - Vertical 4x3 Grid) */}
-        <div className="print-page" style={{
-          width: '210mm',
-          height: '297mm',
-          background: 'white',
-          borderRadius: '16px',
-          padding: '15mm',
-          boxSizing: 'border-box',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between'
-        }}>
-          <div style={{
+        {/* PAGE 3 (Optional Printable 12 Cut-out Obstacles Sheet) */}
+        {includeCutoutSheet && (
+          <div className="print-page" style={{
+            width: '210mm',
+            height: '297mm',
+            background: 'white',
+            borderRadius: '16px',
+            padding: '15mm',
+            boxSizing: 'border-box',
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            borderBottom: '3px solid #8B5CF6',
-            paddingBottom: '0.5rem'
+            flexDirection: 'column',
+            justifyContent: 'space-between'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Scissors size={24} color="#8B5CF6" />
-              <h2 style={{ fontFamily: 'Fredoka', color: '#0F172A', fontSize: '1.4rem' }}>
-                ✂️ Obstáculos Recortables para el Mapa Físico
-              </h2>
-            </div>
-            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748B' }}>Página 3 / 3 (Recortables)</span>
-          </div>
-
-          <p style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 600 }}>
-            Imprime esta hoja en papel o cartulina y recorta las fichas por la línea de puntos para colocarlas sobre el tablero 3x4 del robot TaleBot Pro.
-          </p>
-
-          {/* 4x3 Cut-out Grid */}
-          <div style={{
-            display: 'grid',
-            gridTemplateRows: 'repeat(4, 1fr)',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: '12px',
-            flex: 1,
-            margin: '0.5rem 0'
-          }}>
-            {OBSTACLE_TYPES.map((obs) => (
-              <div
-                key={obs.id}
-                style={{
-                  border: '2px dashed #94A3B8',
-                  borderRadius: '16px',
-                  padding: '0.8rem',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  textAlign: 'center',
-                  background: '#F8FAFC',
-                  position: 'relative'
-                }}
-              >
-                {/* Scissors Cut Icon Badge */}
-                <span style={{
-                  position: 'absolute',
-                  top: '4px',
-                  right: '6px',
-                  fontSize: '0.65rem',
-                  color: '#94A3B8'
-                }}>
-                  ✂️
-                </span>
-
-                <div style={{ fontSize: '2.8rem', filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.1))' }}>
-                  {obs.icon}
-                </div>
-
-                <div style={{ fontFamily: 'Fredoka', fontWeight: 700, fontSize: '0.95rem', color: '#0F172A', marginTop: '4px' }}>
-                  {obs.name}
-                </div>
-
-                <div style={{ fontSize: '0.68rem', color: '#64748B', marginTop: '2px', lineHeight: 1.2 }}>
-                  {obs.description}
-                </div>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              borderBottom: '3px solid #8B5CF6',
+              paddingBottom: '0.5rem'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Scissors size={24} color="#8B5CF6" />
+                <h2 style={{ fontFamily: 'Fredoka', color: '#0F172A', fontSize: '1.4rem' }}>
+                  ✂️ Obstáculos Recortables para el Mapa Físico
+                </h2>
               </div>
-            ))}
-          </div>
+              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748B' }}>Página 3 / 3</span>
+            </div>
 
-          <div style={{
-            fontSize: '0.75rem',
-            color: '#94A3B8',
-            textAlign: 'center',
-            borderTop: '1px solid #E2E8F0',
-            paddingTop: '0.4rem'
-          }}>
-            💡 Consejo: Puedes colocar a TaleBot las Alas 🪽 para sobrevolar el lago o los Brazos 🦾 para derribar muros.
+            <p style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 600 }}>
+              Imprime esta hoja en papel o cartulina y recorta las fichas por la línea de puntos para colocarlas sobre el tablero 3x4 del robot TaleBot Pro.
+            </p>
+
+            <div style={{
+              display: 'grid',
+              gridTemplateRows: 'repeat(4, 1fr)',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: '12px',
+              flex: 1,
+              margin: '0.5rem 0'
+            }}>
+              {OBSTACLE_TYPES.map((obs) => (
+                <div
+                  key={obs.id}
+                  style={{
+                    border: '2px dashed #94A3B8',
+                    borderRadius: '16px',
+                    padding: '0.8rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    textAlign: 'center',
+                    background: '#F8FAFC',
+                    position: 'relative'
+                  }}
+                >
+                  <span style={{ position: 'absolute', top: '4px', right: '6px', fontSize: '0.65rem', color: '#94A3B8' }}>
+                    ✂️
+                  </span>
+                  <div style={{ fontSize: '2.8rem' }}>{obs.icon}</div>
+                  <div style={{ fontFamily: 'Fredoka', fontWeight: 700, fontSize: '0.95rem', color: '#0F172A', marginTop: '4px' }}>
+                    {obs.name}
+                  </div>
+                  <div style={{ fontSize: '0.68rem', color: '#64748B', marginTop: '2px', lineHeight: 1.2 }}>
+                    {obs.description}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

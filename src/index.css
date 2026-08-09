@@ -104,8 +104,20 @@ h1, h2, h3, h4, .brand-title {
   50% { transform: translateY(-8px); }
 }
 
+@keyframes danceRobot {
+  0% { transform: rotate(0deg) scale(1); }
+  25% { transform: rotate(-25deg) scale(1.15); filter: drop-shadow(0 0 15px rgba(139, 92, 246, 0.9)); }
+  50% { transform: rotate(25deg) scale(1.15); filter: drop-shadow(0 0 15px rgba(236, 72, 153, 0.9)); }
+  75% { transform: rotate(-15deg) scale(1.1); filter: drop-shadow(0 0 15px rgba(255, 199, 0, 0.9)); }
+  100% { transform: rotate(0deg) scale(1); }
+}
+
 .animated-robot {
   animation: bounceRobot 2s infinite ease-in-out;
+}
+
+.dancing-robot {
+  animation: danceRobot 0.5s ease-in-out infinite !important;
 }
 
 /* Print CSS setup for double-sided A4 */
