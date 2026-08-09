@@ -53,24 +53,25 @@ export default function GridCanvas({
       ref={containerRef}
       style={{
         display: 'flex',
-        flexDirection: 'column',
         alignItems: 'center',
+        justifyContent: 'center',
         position: 'relative',
-        width: '100%'
+        width: '100%',
+        height: '100%',
+        minHeight: 0
       }}
     >
-      {/* Hero Canvas Container */}
+      {/* Hero Canvas Container (Expands to maximum available space) */}
       <div 
         style={{
           background: theme.bgGradient,
-          padding: '1.4rem',
-          borderRadius: '32px',
-          boxShadow: '0 25px 50px rgba(0, 0, 0, 0.08), 0 10px 25px rgba(255, 105, 0, 0.08)',
-          border: '6px solid #FFFFFF',
+          padding: '1.2rem',
+          borderRadius: '28px',
+          boxShadow: '0 20px 45px rgba(0, 0, 0, 0.08), 0 8px 20px rgba(255, 105, 0, 0.08)',
+          border: '5px solid #FFFFFF',
           position: 'relative',
-          width: '100%',
-          maxWidth: '520px',
-          maxHeight: 'calc(100vh - 340px)',
+          maxHeight: '100%',
+          maxWidth: '100%',
           aspectRatio: `${numCols} / ${numRows}`,
           transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
         }}
