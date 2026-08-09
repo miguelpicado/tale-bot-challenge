@@ -39,7 +39,7 @@ export const OBSTACLE_TYPES = [
 ];
 
 export function getCellLabel(row, col) {
-  const rowLetters = ['A', 'B', 'C', 'D', 'E'];
+  const rowLetters = ['A', 'B', 'C', 'D'];
   return `${rowLetters[row] || row + 1}${col + 1}`;
 }
 
@@ -69,7 +69,7 @@ export function expandLoopCommands(rawCommands) {
 }
 
 // Random Non-Self-Intersecting Path Generator (No cell repeats!)
-export function generateRandomNoRepeatPath(numRows = 5, numCols = 4, targetSteps = 6) {
+export function generateRandomNoRepeatPath(numRows = 4, numCols = 5, targetSteps = 6) {
   let attempts = 0;
   
   while (attempts < 100) {
@@ -141,7 +141,7 @@ export function generateRandomNoRepeatPath(numRows = 5, numCols = 4, targetSteps
   };
 }
 
-export function simulatePath(start, rawCommands, numRows = 5, numCols = 4) {
+export function simulatePath(start, rawCommands, numRows = 4, numCols = 5) {
   const commands = expandLoopCommands(rawCommands);
 
   let currR = start.r;
@@ -227,7 +227,7 @@ export function simulatePath(start, rawCommands, numRows = 5, numCols = 4) {
   };
 }
 
-export function solveNavigationPath(start, end, obstacles = [], numRows = 5, numCols = 4) {
+export function solveNavigationPath(start, end, obstacles = [], numRows = 4, numCols = 5) {
   const obstacleSet = new Set(obstacles.map(o => `${o.r},${o.c}`));
   const queue = [{ r: start.r, c: start.c, dir: start.dir || 0, path: [] }];
   const visited = new Set([`${start.r},${start.c},${start.dir || 0}`]);
