@@ -170,9 +170,7 @@ export function simulatePath(start, rawCommands, numRows = 3, numCols = 4) {
           currR = nextR;
           currC = nextC;
           visitedCells.add(`${currR},${currC}`);
-          if (isPenDown) {
-            penLines.push({ from: { r: prevR, c: prevC }, to: { r: currR, c: currC }, step: idx + 1 });
-          }
+          penLines.push({ from: { r: prevR, c: prevC }, to: { r: currR, c: currC }, step: idx + 1 });
         } else {
           isOutOfBounds = true;
         }
@@ -187,9 +185,7 @@ export function simulatePath(start, rawCommands, numRows = 3, numCols = 4) {
           currR = nextR;
           currC = nextC;
           visitedCells.add(`${currR},${currC}`);
-          if (isPenDown) {
-            penLines.push({ from: { r: prevR, c: prevC }, to: { r: currR, c: currC }, step: idx + 1 });
-          }
+          penLines.push({ from: { r: prevR, c: prevC }, to: { r: currR, c: currC }, step: idx + 1 });
         } else {
           isOutOfBounds = true;
         }
