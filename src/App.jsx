@@ -264,7 +264,7 @@ export default function App() {
           width: '100%'
         }}>
           {/* Hero Grid Canvas */}
-          <section style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+          <section style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', width: '100%' }}>
             <GridCanvas
               numRows={numRows}
               numCols={numCols}
