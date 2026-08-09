@@ -1,0 +1,139 @@
+:root {
+  --tb-yellow: #FFC700;
+  --tb-yellow-dark: #E6B200;
+  --tb-orange: #FF7A00;
+  --tb-blue: #00A3FF;
+  --tb-blue-dark: #0082CC;
+  --tb-green: #10B981;
+  --tb-red: #F43F5E;
+  --tb-purple: #8B5CF6;
+  --tb-pink: #EC4899;
+  --tb-slate: #1E293B;
+  --tb-bg-soft: #F8FAFC;
+  --tb-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  --tb-radius: 20px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Nunito', system-ui, -apple-system, sans-serif;
+  background: linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 50%, #F5F3FF 100%);
+  color: #1E293B;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, .brand-title {
+  font-family: 'Fredoka', cursive, sans-serif;
+  letter-spacing: 0.5px;
+}
+
+/* TaleBot Buttons & Badges */
+.tb-btn {
+  font-family: 'Fredoka', cursive, sans-serif;
+  font-weight: 600;
+  font-size: 1rem;
+  padding: 0.7rem 1.4rem;
+  border-radius: 14px;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.tb-btn:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.15);
+}
+
+.tb-btn:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+.tb-btn-primary {
+  background: linear-gradient(135deg, var(--tb-blue) 0%, var(--tb-blue-dark) 100%);
+  color: white;
+}
+
+.tb-btn-yellow {
+  background: linear-gradient(135deg, var(--tb-yellow) 0%, var(--tb-yellow-dark) 100%);
+  color: #1E293B;
+}
+
+.tb-btn-green {
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  color: white;
+}
+
+.tb-btn-purple {
+  background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+  color: white;
+}
+
+.tb-btn-secondary {
+  background: #FFFFFF;
+  color: #334155;
+  border: 2px solid #E2E8F0;
+}
+
+.tb-card {
+  background: #FFFFFF;
+  border-radius: var(--tb-radius);
+  padding: 1.5rem;
+  box-shadow: var(--tb-shadow);
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+}
+
+/* Animations */
+@keyframes pulseGlow {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 5px rgba(255, 199, 0, 0.6)); }
+  50% { transform: scale(1.05); filter: drop-shadow(0 0 15px rgba(255, 199, 0, 0.9)); }
+}
+
+@keyframes bounceRobot {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.animated-robot {
+  animation: bounceRobot 2s infinite ease-in-out;
+}
+
+/* Print CSS setup for double-sided A4 */
+@media print {
+  body {
+    background: #FFFFFF !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+
+  .print-page {
+    width: 210mm;
+    height: 297mm;
+    page-break-after: always;
+    padding: 15mm;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background: white !important;
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+}
