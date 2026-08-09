@@ -9,6 +9,7 @@ import SavedLibraryModal from './components/SavedLibraryModal';
 import GoogleDriveModal from './components/GoogleDriveModal';
 import NewChallengeModal from './components/NewChallengeModal';
 import SavePrintModal from './components/SavePrintModal';
+import ShapeCatalogDrawer from './components/ShapeCatalogDrawer';
 
 import { PRESET_CHALLENGES } from './utils/presets';
 import { simulatePath, solveNavigationPath, COMMAND_TYPES } from './utils/talebotEngine';
@@ -36,6 +37,7 @@ export default function App() {
 
   // Active Mode Name Badge
   const [activeModeName, setActiveModeName] = useState('Navegación y Obstáculos');
+  const [isDrawingMode, setIsDrawingMode] = useState(false);
 
   // Saved challenges in LocalStorage
   const [savedChallenges, setSavedChallenges] = useState([]);
@@ -108,7 +110,7 @@ export default function App() {
     }));
   };
 
-  // Popover cell action handlers
+  // Cell popover action handlers
   const handleSetStartPos = (pos) => {
     setCurrentChallenge({ ...currentChallenge, start: pos });
   };
@@ -185,8 +187,7 @@ export default function App() {
       currentChallenge.start,
       currentChallenge.commands || [],
       numRows,
-      numCols,
-      { wings: hasWings, arms: hasArms }
+      numCols
     );
 
     setIsPlaying(true);
@@ -213,6 +214,7 @@ export default function App() {
 
   const handleSelectChallengeMode = (modeData) => {
     setActiveModeName(modeData.modeName);
+    setIsDrawingMode(modeData.isDrawingMode || false);
     setCurrentChallenge({
       ...currentChallenge,
       ...modeData,
@@ -221,6 +223,19 @@ export default function App() {
     });
     setRobotSimState(null);
     setActivePenLines([]);
+  };
+
+  const handleSelectShapeFromDrawer = (shape) => {
+    setCurrentChallenge({
+      ...currentChallenge,
+      title: `Forma: ${shape.name}`,
+      story: shape.description,
+      start: shape.start,
+      target: shape.start,
+      obstacles: [],
+      commands: shape.commands,
+      penMarkerMode: true
+    });
   };
 
   return (
@@ -267,9 +282,9 @@ export default function App() {
           />
         </section>
 
-        {/* Right Sidebar: TaleBot Controller & Challenge Editor */}
+        {/* Right Sidebar: TaleBot Controller, Shape Drawer (If active), & Details */}
         <aside style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-          {/* Accessories Control Box (Wings & Arms) */}
+          {/* Accessories Control Box */}
           <div className="tb-card" style={{ padding: '0.8rem 1.2rem' }}>
             <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#334155', display: 'block', marginBottom: '0.5rem' }}>
               🦾 Accesorios Físicos de TaleBot Pro:
@@ -323,6 +338,11 @@ export default function App() {
               penMarkerMode: !currentChallenge.penMarkerMode
             })}
           />
+
+          {/* Shape Catalog Drawer if Drawing Mode is Active */}
+          {isDrawingMode && (
+            <ShapeCatalogDrawer onSelectShape={handleSelectShapeFromDrawer} />
+          )}
 
           {/* Challenge Details Editor */}
           <ChallengeEditor

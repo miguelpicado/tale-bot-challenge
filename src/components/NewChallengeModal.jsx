@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { SHAPE_PRESETS, COMMAND_TYPES, solveNavigationPath } from '../utils/talebotEngine';
-import { Compass, PenTool, Shuffle, Sparkles, PlusCircle, X } from 'lucide-react';
+import { SHAPE_PRESETS, COMMAND_TYPES, solveNavigationPath, generateRandomNoRepeatPath } from '../utils/talebotEngine';
+import { Compass, PenTool, Shuffle, PlusCircle, X } from 'lucide-react';
 
 export default function NewChallengeModal({
   numRows = 3,
@@ -58,75 +58,41 @@ export default function NewChallengeModal({
       target,
       obstacles,
       commands,
-      penMarkerMode: false
+      penMarkerMode: false,
+      isDrawingMode: false
     });
     onClose();
   };
 
-  const handleSelectShape = (shape) => {
+  const handleSelectShapeMode = () => {
+    const defaultShape = SHAPE_PRESETS[0];
     onSelectChallengeMode({
-      modeName: `Dibujo: ${shape.name}`,
-      title: `Forma: ${shape.name}`,
-      story: shape.description,
-      start: shape.start,
-      target: shape.start,
+      modeName: 'Dibujo y Formas',
+      title: `Forma: ${defaultShape.name}`,
+      story: defaultShape.description,
+      start: defaultShape.start,
+      target: defaultShape.start,
       obstacles: [],
-      commands: shape.commands,
-      penMarkerMode: true
+      commands: defaultShape.commands,
+      penMarkerMode: true,
+      isDrawingMode: true
     });
     onClose();
   };
 
-  const handleGenerateRandom = () => {
-    const start = {
-      r: Math.floor(Math.random() * numRows),
-      c: Math.floor(Math.random() * numCols),
-      dir: Math.floor(Math.random() * 4)
-    };
-
-    let currR = start.r;
-    let currC = start.c;
-    let currDir = start.dir;
-
-    const availableMoveCmds = [
-      COMMAND_TYPES.FORWARD,
-      COMMAND_TYPES.FORWARD,
-      COMMAND_TYPES.TURN_LEFT,
-      COMMAND_TYPES.TURN_RIGHT
-    ];
-
-    const commands = [];
-    for (let i = 0; i < stepCount; i++) {
-      const randCmd = availableMoveCmds[Math.floor(Math.random() * availableMoveCmds.length)];
-      commands.push(randCmd);
-
-      if (randCmd.id === 'FORWARD') {
-        const dy = currDir === 0 ? -1 : currDir === 2 ? 1 : 0;
-        const dx = currDir === 1 ? 1 : currDir === 3 ? -1 : 0;
-        if (currR + dy >= 0 && currR + dy < numRows && currC + dx >= 0 && currC + dx < numCols) {
-          currR += dy;
-          currC += dx;
-        } else {
-          commands[commands.length - 1] = COMMAND_TYPES.TURN_RIGHT;
-          currDir = (currDir + 1) % 4;
-        }
-      } else if (randCmd.id === 'TURN_LEFT') {
-        currDir = (currDir + 3) % 4;
-      } else if (randCmd.id === 'TURN_RIGHT') {
-        currDir = (currDir + 1) % 4;
-      }
-    }
-    commands.push(COMMAND_TYPES.DANCE);
-
+  // Generate random non-repeating path (no cell repeated!)
+  const handleGenerateRandomNoRepeat = () => {
+    const generated = generateRandomNoRepeatPath(numRows, numCols, stepCount);
     onSelectChallengeMode({
-      modeName: 'Ruta Aleatoria por Pasos',
+      modeName: 'Ruta Aleatoria (Sin Repetir Casilla)',
       title: '¡Recorrido Aleatorio Sorpresa!',
-      story: 'Sigue la secuencia misteriosa de pasos y descubre dónde terminará el robot.',
-      start,
-      target: { r: currR, c: currC },
+      story: 'Sigue la secuencia misteriosa sin repetir ninguna casilla del mapa.',
+      start: generated.start,
+      target: generated.target,
       obstacles: [],
-      commands,
-      penMarkerMode: false
+      commands: generated.commands,
+      penMarkerMode: false,
+      isDrawingMode: false
     });
     onClose();
   };
@@ -140,7 +106,8 @@ export default function NewChallengeModal({
       target: { r: 0, c: numCols - 1 },
       obstacles: [],
       commands: [],
-      penMarkerMode: false
+      penMarkerMode: false,
+      isDrawingMode: false
     });
     onClose();
   };
@@ -162,7 +129,7 @@ export default function NewChallengeModal({
     }}>
       <div className="tb-card" style={{
         width: '100%',
-        maxWidth: '640px',
+        maxWidth: '620px',
         display: 'flex',
         flexDirection: 'column',
         gap: '1.2rem',
@@ -200,7 +167,7 @@ export default function NewChallengeModal({
                 <Compass size={20} /> Navegación
               </div>
               <p style={{ fontSize: '0.75rem', color: '#0284C7', marginTop: '4px' }}>
-                Genera un desafío con obstáculos recortables y meta resuelto con IA.
+                Desafíos con obstáculos recortables resueltos con IA.
               </p>
             </div>
 
@@ -223,7 +190,7 @@ export default function NewChallengeModal({
             </button>
           </div>
 
-          {/* Option 2: Random */}
+          {/* Option 2: Random No-Repeat */}
           <div style={{
             background: '#F5F3FF',
             border: '2px solid #DDD6FE',
@@ -236,10 +203,10 @@ export default function NewChallengeModal({
           }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontFamily: 'Fredoka', fontWeight: 700, color: '#6D28D9', fontSize: '1rem' }}>
-                <Shuffle size={20} /> Ruta Aleatoria
+                <Shuffle size={20} /> Ruta Aleatoria (Sin Repetir)
               </div>
               <p style={{ fontSize: '0.75rem', color: '#7C3AED', marginTop: '4px' }}>
-                Secuencia de pasos de movimiento sorpresa para practicar lectura de comandos.
+                Avanza siempre a casillas sin repetir ninguna casilla previa.
               </p>
             </div>
 
@@ -250,53 +217,39 @@ export default function NewChallengeModal({
               <input
                 type="range"
                 min="3"
-                max="10"
+                max="8"
                 value={stepCount}
                 onChange={(e) => setStepCount(parseInt(e.target.value))}
                 style={{ width: '100%', accentColor: '#8B5CF6' }}
               />
             </div>
 
-            <button onClick={handleGenerateRandom} className="tb-btn tb-btn-purple" style={{ fontSize: '0.8rem', padding: '0.5rem', justifyContent: 'center' }}>
+            <button onClick={handleGenerateRandomNoRepeat} className="tb-btn tb-btn-purple" style={{ fontSize: '0.8rem', padding: '0.5rem', justifyContent: 'center' }}>
               Generar Aleatorio
             </button>
           </div>
         </div>
 
-        {/* Option 3: Shapes presets for Marker Pens */}
-        <div>
-          <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#334155', display: 'block', marginBottom: '6px' }}>
-            🖊️ Formas para Dibujar con Rotulador:
-          </span>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
-            {SHAPE_PRESETS.map((preset) => (
-              <button
-                key={preset.id}
-                onClick={() => handleSelectShape(preset)}
-                style={{
-                  background: '#FFF7ED',
-                  border: '1.5px solid #FFEDD5',
-                  borderRadius: '12px',
-                  padding: '0.5rem',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  fontFamily: 'Fredoka',
-                  fontSize: '0.8rem',
-                  fontWeight: 600,
-                  color: '#C2410C'
-                }}
-              >
-                {preset.name}
-              </button>
-            ))}
-          </div>
-        </div>
+        {/* Option 3: Drawing Shapes Catalog Drawer Mode */}
+        <button
+          onClick={handleSelectShapeMode}
+          className="tb-btn"
+          style={{
+            background: '#FFF7ED',
+            color: '#C2410C',
+            border: '2px solid #FFEDD5',
+            justifyContent: 'center',
+            padding: '0.7rem'
+          }}
+        >
+          <PenTool size={18} /> Abrir Catálogo Completo de Formas, Letras y Dibujos
+        </button>
 
         {/* Option 4: Blank Canvas */}
         <button
           onClick={handleBlankChallenge}
           className="tb-btn tb-btn-secondary"
-          style={{ width: '100%', justifyContent: 'center', padding: '0.65rem', marginTop: '0.4rem' }}
+          style={{ width: '100%', justifyContent: 'center', padding: '0.6rem' }}
         >
           🎨 Empezar Reto en Blanco
         </button>
