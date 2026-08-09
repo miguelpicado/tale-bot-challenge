@@ -323,8 +323,20 @@ export default function PrintSheetPreview({
         </div>
       </div>
 
-      {/* Printable Sheet Pages */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', alignItems: 'center' }}>
+      {/* Printable Sheet Pages - Side by Side Layout (Lado a lado) */}
+      <div 
+        className="print-page-container"
+        style={{
+          display: 'flex',
+          flexDirection: 'row',
+          gap: '2rem',
+          justifyContent: 'center',
+          alignItems: 'flex-start',
+          maxWidth: '100%',
+          overflowX: 'auto',
+          paddingBottom: '1rem'
+        }}
+      >
         {/* PAGE 1 (Worksheet Front - Map with painted path) */}
         <div className="print-page" style={{
           width: '210mm',

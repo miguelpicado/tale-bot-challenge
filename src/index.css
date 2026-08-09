@@ -132,16 +132,25 @@ h1, h2, h3, h4, .brand-title {
     display: none !important;
   }
 
+  .print-page-container {
+    display: block !important;
+    overflow: visible !important;
+  }
+
   .print-page {
-    width: 210mm;
-    height: 297mm;
-    page-break-after: always;
-    padding: 15mm;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
+    width: 210mm !important;
+    height: 297mm !important;
+    page-break-after: always !important;
+    break-after: page !important;
+    padding: 15mm !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
     background: white !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    margin: 0 auto !important;
   }
 
   @page {
