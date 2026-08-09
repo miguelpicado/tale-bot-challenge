@@ -257,7 +257,7 @@ export default function App() {
         alignItems: 'start'
       }}>
         {/* Left Hero Column: Prominent 3x4 Grid Map Canvas & Full-Width Command Sequence Bar */}
-        <section style={{ display: 'flex', flexDirection: 'column', gap: '1.4rem', alignItems: 'center' }}>
+        <section style={{ display: 'flex', flexDirection: 'column', gap: '1.4rem', alignItems: 'stretch', width: '100%' }}>
           {/* Prominent Grid Canvas */}
           <GridCanvas
             numRows={numRows}
