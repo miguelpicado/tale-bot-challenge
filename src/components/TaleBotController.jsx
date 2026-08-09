@@ -1,6 +1,36 @@
-import React, { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { COMMAND_TYPES } from '../utils/talebotEngine';
-import { Play, RotateCcw, Trash2, Wand2, Pause } from 'lucide-react';
+import {
+  ArrowUp, ArrowDown, CornerUpLeft, CornerUpRight,
+  Play, Pause, Mic, Repeat, Bird, X, Undo2, Wand2
+} from 'lucide-react';
+
+/**
+ * Roseta igual a la cubierta del Tale-Bot Pro: los cuatro movimientos en cruz
+ * alrededor del arranque, y las cuatro funciones en cápsulas blancas pequeñas
+ * ocupando las diagonales.
+ */
+const CLUSTER = [
+  { cmd: 'SOUND', size: 'sm', Icon: Mic, hint: 'M' },
+  { cmd: 'FORWARD', size: 'big', Icon: ArrowUp, hint: '↑' },
+  { cmd: 'LOOP', size: 'sm', Icon: Repeat, hint: 'L' },
+  { cmd: 'TURN_LEFT', size: 'big', Icon: CornerUpLeft, hint: '←' },
+  { cmd: 'RUN', size: 'play' },
+  { cmd: 'TURN_RIGHT', size: 'big', Icon: CornerUpRight, hint: '→' },
+  { cmd: 'DANCE', size: 'sm', Icon: Bird, hint: 'B' },
+  { cmd: 'BACKWARD', size: 'big', Icon: ArrowDown, hint: '↓' },
+  { cmd: 'CLEAR', size: 'sm', Icon: X }
+];
+
+const KEY_MAP = {
+  ArrowUp: 'FORWARD',
+  ArrowDown: 'BACKWARD',
+  ArrowLeft: 'TURN_LEFT',
+  ArrowRight: 'TURN_RIGHT',
+  b: 'DANCE', B: 'DANCE',
+  m: 'SOUND', M: 'SOUND',
+  l: 'LOOP', L: 'LOOP'
+};
 
 export default function TaleBotController({
   commands = [],
@@ -11,52 +41,34 @@ export default function TaleBotController({
   onAutoSolvePath,
   isPlaying = false
 }) {
-  // Silent Global Keyboard Shortcuts Listener
+  // Hunde también la tecla disparada por teclado, no solo la del ratón
+  const [pressed, setPressed] = useState(null);
+  const pressTimer = useRef(null);
+
+  const flash = (key) => {
+    setPressed(key);
+    clearTimeout(pressTimer.current);
+    pressTimer.current = setTimeout(() => setPressed(null), 170);
+  };
+
+  useEffect(() => () => clearTimeout(pressTimer.current), []);
+
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) {
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) return;
+
+      const cmdKey = KEY_MAP[e.key];
+      if (cmdKey) {
+        e.preventDefault();
+        flash(cmdKey);
+        onAddCommand(COMMAND_TYPES[cmdKey]);
         return;
       }
 
-      switch (e.key) {
-        case 'ArrowUp':
-          e.preventDefault();
-          onAddCommand(COMMAND_TYPES.FORWARD);
-          break;
-        case 'ArrowDown':
-          e.preventDefault();
-          onAddCommand(COMMAND_TYPES.BACKWARD);
-          break;
-        case 'ArrowLeft':
-          e.preventDefault();
-          onAddCommand(COMMAND_TYPES.TURN_LEFT);
-          break;
-        case 'ArrowRight':
-          e.preventDefault();
-          onAddCommand(COMMAND_TYPES.TURN_RIGHT);
-          break;
-        case 'b':
-        case 'B':
-          e.preventDefault();
-          onAddCommand(COMMAND_TYPES.DANCE);
-          break;
-        case 'm':
-        case 'M':
-          e.preventDefault();
-          onAddCommand(COMMAND_TYPES.SOUND);
-          break;
-        case 'l':
-        case 'L':
-          e.preventDefault();
-          onAddCommand(COMMAND_TYPES.LOOP);
-          break;
-        case ' ':
-        case 'Enter':
-          e.preventDefault();
-          onRunSimulation();
-          break;
-        default:
-          break;
+      if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        flash('RUN');
+        onRunSimulation();
       }
     };
 
@@ -65,221 +77,76 @@ export default function TaleBotController({
   }, [onAddCommand, onRunSimulation]);
 
   return (
-    <div className="tb-card" style={{
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '1.2rem',
-      width: '100%',
-      padding: '1.5rem',
-      background: '#FFFFFF',
-      boxShadow: '0 15px 35px rgba(0,0,0,0.06)'
-    }}>
-      {/* Console Header */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        borderBottom: '2px dashed #E2E8F0',
-        paddingBottom: '0.8rem'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <span style={{ fontSize: '1.5rem' }}>🕹️</span>
-          <h3 style={{ fontFamily: 'Fredoka', fontSize: '1.25rem', color: '#0F172A' }}>
-            Mando TaleBot Pro
-          </h3>
-        </div>
+    <div className="deck">
+      <div className="deck__head">
+        <h3 className="deck__title">Mando</h3>
+        <span className="t-mono" style={{ fontSize: '.7rem', color: 'var(--tx-3)' }}>
+          {commands.length} {commands.length === 1 ? 'paso' : 'pasos'}
+        </span>
       </div>
 
-      {/* Hardware Deck - 3x3 Grid Matching TaleBot Pro Physical Top Deck */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(3, 1fr)',
-        gap: '0.8rem'
-      }}>
-        {/* --- FILA 1: Micro, Avanzar, Baile --- */}
+      <div className="cluster">
+        {CLUSTER.map((slot) => {
+          if (slot.cmd === 'RUN') {
+            return (
+              <button
+                key="RUN"
+                className="hw hw--big hw--play"
+                data-pressed={pressed === 'RUN'}
+                onClick={onRunSimulation}
+                style={{ '--hw-c': '#FF7A1B' }}
+                title={isPlaying ? 'Parar (Intro)' : 'Ejecutar (Intro)'}
+                aria-label={isPlaying ? 'Parar' : 'Ejecutar'}
+              >
+                {isPlaying ? <Pause size={26} fill="currentColor" /> : <Play size={26} fill="currentColor" />}
+              </button>
+            );
+          }
 
-        {/* 1. Micro / Sonido (Cían) */}
-        <button
-          onClick={() => onAddCommand(COMMAND_TYPES.SOUND)}
-          className="tb-btn"
-          style={{
-            background: COMMAND_TYPES.SOUND.color,
-            color: COMMAND_TYPES.SOUND.textColor,
-            flexDirection: 'column',
-            padding: '1.1rem 0.5rem',
-            fontSize: '0.85rem'
-          }}
-        >
-          <span style={{ fontSize: '1.7rem' }}>🔊</span>
-          <span>Micro</span>
-        </button>
+          if (slot.cmd === 'CLEAR') {
+            return (
+              <button
+                key="CLEAR"
+                className="hw hw--sm"
+                onClick={onClearCommands}
+                disabled={commands.length === 0}
+                style={{ '--hw-c': '#EF4444' }}
+                title="Borrar toda la secuencia"
+                aria-label="Borrar toda la secuencia"
+              >
+                <X size={20} strokeWidth={3} />
+              </button>
+            );
+          }
 
-        {/* 2. Avanzar (Verde) */}
-        <button
-          onClick={() => onAddCommand(COMMAND_TYPES.FORWARD)}
-          className="tb-btn"
-          style={{
-            background: COMMAND_TYPES.FORWARD.color,
-            color: COMMAND_TYPES.FORWARD.textColor,
-            flexDirection: 'column',
-            padding: '1.1rem 0.5rem',
-            fontSize: '0.9rem'
-          }}
-        >
-          <span style={{ fontSize: '1.8rem' }}>⬆️</span>
-          <span>Avanzar</span>
-        </button>
+          const info = COMMAND_TYPES[slot.cmd];
+          const { Icon } = slot;
+          const isBig = slot.size === 'big';
 
-        {/* 3. Baile (Morado) */}
-        <button
-          onClick={() => onAddCommand(COMMAND_TYPES.DANCE)}
-          className="tb-btn"
-          style={{
-            background: COMMAND_TYPES.DANCE.color,
-            color: COMMAND_TYPES.DANCE.textColor,
-            flexDirection: 'column',
-            padding: '1.1rem 0.5rem',
-            fontSize: '0.85rem'
-          }}
-        >
-          <span style={{ fontSize: '1.7rem' }}>💃</span>
-          <span>Baile</span>
-        </button>
-
-        {/* --- FILA 2: Izquierda, Reproducir (Ejecutar), Derecha --- */}
-
-        {/* 4. Girar Izquierda (Amarillo) */}
-        <button
-          onClick={() => onAddCommand(COMMAND_TYPES.TURN_LEFT)}
-          className="tb-btn"
-          style={{
-            background: COMMAND_TYPES.TURN_LEFT.color,
-            color: COMMAND_TYPES.TURN_LEFT.textColor,
-            flexDirection: 'column',
-            padding: '1.1rem 0.5rem',
-            fontSize: '0.9rem'
-          }}
-        >
-          <span style={{ fontSize: '1.8rem' }}>↩️</span>
-          <span>Izquierda</span>
-        </button>
-
-        {/* 5. Reproducir / Ejecutar (Naranja) */}
-        <button
-          onClick={onRunSimulation}
-          className="tb-btn"
-          style={{
-            background: 'linear-gradient(135deg, #FF6900 0%, #FF9500 100%)',
-            color: 'white',
-            flexDirection: 'column',
-            padding: '1.1rem 0.5rem',
-            fontSize: '0.9rem',
-            boxShadow: '0 4px 16px rgba(255, 105, 0, 0.45)'
-          }}
-        >
-          {isPlaying ? <Pause size={26} /> : <Play size={26} />}
-          <span>{isPlaying ? 'Pausar' : 'Reproducir'}</span>
-        </button>
-
-        {/* 6. Girar Derecha (Azul) */}
-        <button
-          onClick={() => onAddCommand(COMMAND_TYPES.TURN_RIGHT)}
-          className="tb-btn"
-          style={{
-            background: COMMAND_TYPES.TURN_RIGHT.color,
-            color: COMMAND_TYPES.TURN_RIGHT.textColor,
-            flexDirection: 'column',
-            padding: '1.1rem 0.5rem',
-            fontSize: '0.9rem'
-          }}
-        >
-          <span style={{ fontSize: '1.8rem' }}>↪️</span>
-          <span>Derecha</span>
-        </button>
-
-        {/* --- FILA 3: Loop, Retroceder, Borrar --- */}
-
-        {/* 7. Bucle / Loop (Verde Claro) */}
-        <button
-          onClick={() => onAddCommand(COMMAND_TYPES.LOOP)}
-          className="tb-btn"
-          style={{
-            background: COMMAND_TYPES.LOOP.color,
-            color: COMMAND_TYPES.LOOP.textColor,
-            flexDirection: 'column',
-            padding: '1.1rem 0.5rem',
-            fontSize: '0.85rem'
-          }}
-        >
-          <span style={{ fontSize: '1.7rem' }}>🔁</span>
-          <span>Loop</span>
-        </button>
-
-        {/* 8. Retroceder (Rojo) */}
-        <button
-          onClick={() => onAddCommand(COMMAND_TYPES.BACKWARD)}
-          className="tb-btn"
-          style={{
-            background: COMMAND_TYPES.BACKWARD.color,
-            color: COMMAND_TYPES.BACKWARD.textColor,
-            flexDirection: 'column',
-            padding: '1.1rem 0.5rem',
-            fontSize: '0.9rem'
-          }}
-        >
-          <span style={{ fontSize: '1.8rem' }}>⬇️</span>
-          <span>Retroceder</span>
-        </button>
-
-        {/* 9. Borrar Todo (Blanco con LED Blanco) */}
-        <button
-          onClick={onClearCommands}
-          className="tb-btn"
-          disabled={commands.length === 0}
-          style={{
-            background: '#FFFFFF',
-            color: '#0F172A',
-            border: '2.5px solid #E2E8F0',
-            flexDirection: 'column',
-            padding: '1.1rem 0.5rem',
-            fontSize: '0.85rem',
-            boxShadow: '0 2px 5px rgba(0,0,0,0.05)'
-          }}
-        >
-          <Trash2 size={24} color="#EF4444" />
-          <span>Borrar</span>
-        </button>
+          return (
+            <button
+              key={slot.cmd}
+              className={`hw ${isBig ? 'hw--big' : 'hw--sm'}`}
+              data-pressed={pressed === slot.cmd}
+              onClick={() => { flash(slot.cmd); onAddCommand(info); }}
+              style={{ '--hw-c': info.color }}
+              title={`${info.name} (${slot.hint})`}
+              aria-label={info.name}
+            >
+              {isBig && <span className="hw__hint">{slot.hint}</span>}
+              <Icon size={isBig ? 30 : 20} strokeWidth={isBig ? 2.6 : 2.4} />
+            </button>
+          );
+        })}
       </div>
 
-      {/* Controller Secondary Actions Bar */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: '0.8rem'
-      }}>
-        <button
-          onClick={onRemoveLastCommand}
-          className="tb-btn tb-btn-secondary"
-          disabled={commands.length === 0}
-          style={{ padding: '0.6rem 1rem', fontSize: '0.85rem', flex: 1, justifyContent: 'center' }}
-        >
-          <RotateCcw size={16} /> Borrar Último Paso
+      <div className="deck__row">
+        <button className="deck__btn" onClick={onRemoveLastCommand} disabled={commands.length === 0}>
+          <Undo2 size={15} /> Deshacer paso
         </button>
 
-        <button
-          onClick={onAutoSolvePath}
-          className="tb-btn"
-          style={{
-            background: 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)',
-            color: 'white',
-            padding: '0.6rem 1rem',
-            fontSize: '0.85rem',
-            flex: 1,
-            justifyContent: 'center'
-          }}
-        >
-          <Wand2 size={16} /> Auto Resolver
+        <button className="deck__btn deck__btn--solve" onClick={onAutoSolvePath}>
+          <Wand2 size={15} /> Resolver solo
         </button>
       </div>
     </div>

@@ -20,23 +20,54 @@ export const COMMAND_TYPES = {
   PEN_UP: { id: 'PEN_UP', name: 'Subir Rotulador', color: '#64748B', textColor: '#FFFFFF', icon: '✍️', ledColor: '#94A3B8', key: 'U' },
 };
 
-// Printable Cut-out Obstacles & Intermediate Step Items (Alas, Brazos, Obstáculos)
+// Obstáculos y pasadas intermedias recortables.
+// `blocking` marca los que cierran el paso: el resolutor automático rodea esos
+// y atraviesa el resto (recogidas y paradas obligadas sí se pueden pisar).
 export const OBSTACLE_TYPES = [
-  { id: 'ALAS', name: 'Poner Alas', icon: '🪽', description: 'Pasada intermedia: Poner alas a TaleBot' },
-  { id: 'BRAZOS', name: 'Poner Brazos', icon: '🦾', description: 'Pasada intermedia: Poner brazos a TaleBot' },
-  { id: 'ARBOL', name: 'Árbol', icon: '🌳', description: 'Rodear o volar por encima con Alas 🪽' },
-  { id: 'MURO', name: 'Muro', icon: '🧱', description: 'Rodear o derribar con Brazos 🦾' },
-  { id: 'PUENTE_NS', name: 'Puente Norte-Sur', icon: '🌉', description: 'Pasar solo en sentido vertical (Norte-Sur)' },
-  { id: 'PUENTE_EO', name: 'Puente Este-Oeste', icon: '🌉', description: 'Pasar solo en sentido horizontal (Este-Oeste)' },
-  { id: 'FUEGO', name: 'Fuego', icon: '🔥', description: 'Barrera insuperable (no se puede cruzar ni volar)' },
-  { id: 'LAGO', name: 'Lago', icon: '🌊', description: 'Cruzar volando con las Alas 🪽 de TaleBot' },
-  { id: 'FIESTA', name: 'Fiesta', icon: '💃', description: 'Obliga a parar y ejecutar comando BAILAR 💃' },
-  { id: 'VOZ', name: 'Mensaje de Voz', icon: '🎙️', description: 'Obliga a parar y reproducir SONIDO 🔊' },
-  { id: 'ROTONDA', name: 'Rotonda', icon: '🔄', description: 'Obliga a dar una vuelta completa (360°) en la casilla' },
-  { id: 'MEDIO_MURO', name: 'Medio Muro', icon: '🚧', description: 'Obliga a dar media vuelta (180°) y continuar marcha atrás' },
-  { id: 'TESORO', name: 'Tesoro', icon: '🪙', description: 'Premio o moneda recolectable' },
-  { id: 'ALTO', name: 'Señal de Alto', icon: '🛑', description: 'Obstáculo de detención estándar' }
+  { id: 'ALAS', name: 'Poner Alas', icon: '🪽', blocking: false, description: 'Pasada intermedia: Poner alas a TaleBot' },
+  { id: 'BRAZOS', name: 'Poner Brazos', icon: '🦾', blocking: false, description: 'Pasada intermedia: Poner brazos a TaleBot' },
+  { id: 'ARBOL', name: 'Árbol', icon: '🌳', blocking: true, description: 'Rodear o volar por encima con Alas 🪽' },
+  { id: 'MURO', name: 'Muro', icon: '🧱', blocking: true, description: 'Rodear o derribar con Brazos 🦾' },
+  { id: 'PUENTE_NS', name: 'Puente Norte-Sur', icon: '🌉', blocking: true, description: 'Pasar solo en sentido vertical (Norte-Sur)' },
+  { id: 'PUENTE_EO', name: 'Puente Este-Oeste', icon: '🌉', blocking: true, description: 'Pasar solo en sentido horizontal (Este-Oeste)' },
+  { id: 'FUEGO', name: 'Fuego', icon: '🔥', blocking: true, description: 'Barrera insuperable (no se puede cruzar ni volar)' },
+  { id: 'LAGO', name: 'Lago', icon: '🌊', blocking: true, description: 'Cruzar volando con las Alas 🪽 de TaleBot' },
+  { id: 'FIESTA', name: 'Fiesta', icon: '💃', blocking: false, description: 'Obliga a parar y ejecutar comando BAILAR 💃' },
+  { id: 'VOZ', name: 'Mensaje de Voz', icon: '🎙️', blocking: false, description: 'Obliga a parar y reproducir SONIDO 🔊' },
+  { id: 'ROTONDA', name: 'Rotonda', icon: '🔄', blocking: false, description: 'Obliga a dar una vuelta completa (360°) en la casilla' },
+  { id: 'MEDIO_MURO', name: 'Medio Muro', icon: '🚧', blocking: true, description: 'Obliga a dar media vuelta (180°) y continuar marcha atrás' },
+  { id: 'TESORO', name: 'Tesoro', icon: '🪙', blocking: false, description: 'Premio o moneda recolectable' },
+  { id: 'ALTO', name: 'Señal de Alto', icon: '🛑', blocking: true, description: 'Obstáculo de detención estándar' }
 ];
+
+const BLOCKING_IDS = new Set(OBSTACLE_TYPES.filter(o => o.blocking).map(o => o.id));
+
+export function isBlocking(obstacle) {
+  return BLOCKING_IDS.has(obstacle?.type || 'ALTO');
+}
+
+/**
+ * Cuánto dura cada comando en la simulación, en ms.
+ * El robot real acelera, recorre la casilla y frena; los giros son más cortos
+ * y el baile ocupa un compás entero.
+ */
+export const COMMAND_DURATION = {
+  FORWARD: 620,
+  BACKWARD: 680,
+  TURN_LEFT: 440,
+  TURN_RIGHT: 440,
+  DANCE: 1500,
+  SOUND: 520,
+  LOOP: 200,
+  PEN_DOWN: 360,
+  PEN_UP: 360
+};
+
+export const DEFAULT_STEP_MS = 520;
+
+export function durationOf(commandId) {
+  return COMMAND_DURATION[commandId] ?? DEFAULT_STEP_MS;
+}
 
 export function getCellLabel(row, col, numRows = 5) {
   const rowLettersFromBottom = ['A', 'B', 'C', 'D', 'E', 'F'];
@@ -230,7 +261,8 @@ export function simulatePath(start, rawCommands, numRows = 4, numCols = 5) {
 }
 
 export function solveNavigationPath(start, end, obstacles = [], numRows = 4, numCols = 5) {
-  const obstacleSet = new Set(obstacles.map(o => `${o.r},${o.c}`));
+  // Solo cierran el paso los obstáculos marcados como `blocking`
+  const obstacleSet = new Set(obstacles.filter(isBlocking).map(o => `${o.r},${o.c}`));
   const queue = [{ r: start.r, c: start.c, dir: start.dir || 0, path: [] }];
   const visited = new Set([`${start.r},${start.c},${start.dir || 0}`]);
 
