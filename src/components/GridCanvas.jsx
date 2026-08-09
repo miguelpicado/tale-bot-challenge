@@ -69,7 +69,8 @@ export default function GridCanvas({
           border: '6px solid #FFFFFF',
           position: 'relative',
           width: '100%',
-          maxHeight: 'calc(100vh - 250px)',
+          maxWidth: '520px',
+          maxHeight: 'calc(100vh - 340px)',
           aspectRatio: `${numCols} / ${numRows}`,
           transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
         }}

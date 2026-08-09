@@ -209,8 +209,11 @@ export default function App() {
     }, 550);
   };
 
+  const [generatedChallengesList, setGeneratedChallengesList] = useState([]);
+
   const handleGenerateA4Pages = (generatedList) => {
     if (generatedList.length >= 2) {
+      setGeneratedChallengesList(generatedList);
       setChallenge1(generatedList[0]);
       setChallenge2(generatedList[1]);
       setActiveModeName(`Fichas Autogeneradas (${generatedList.length} Retos)`);
@@ -352,6 +355,7 @@ export default function App() {
 
       {showPrintPreview && (
         <PrintSheetPreview
+          challengesList={generatedChallengesList}
           challenge1={challenge1}
           challenge2={challenge2}
           onClose={() => setShowPrintPreview(false)}
