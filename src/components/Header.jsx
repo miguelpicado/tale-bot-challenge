@@ -82,7 +82,7 @@ export default function Header({
             style={{ fontSize: '0.85rem', padding: '0.5rem 0.9rem' }}
           >
             <RotateCw size={16} color="#00A3FF" />
-            <span>{orientation === 'landscape' ? '3x4 Horizontal' : '4x3 Vertical'}</span>
+            <span>{orientation === 'landscape' ? '5x4 Horizontal' : '4x5 Vertical'}</span>
           </button>
 
           {/* New Challenge Modal Trigger */}

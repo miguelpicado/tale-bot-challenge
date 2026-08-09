@@ -17,10 +17,10 @@ import { simulatePath, solveNavigationPath, COMMAND_TYPES } from './utils/talebo
 import { saveChallengesToLocal, loadChallengesFromLocal, getSavedGoogleClientId } from './utils/storage';
 
 export default function App() {
-  // Orientation: 'landscape' (3x4) or 'portrait' (4x3)
+  // Orientation: 'landscape' (5x4) or 'portrait' (4x5)
   const [orientation, setOrientation] = useState('landscape');
-  const numRows = orientation === 'landscape' ? 3 : 4;
-  const numCols = orientation === 'landscape' ? 4 : 3;
+  const numRows = orientation === 'landscape' ? 5 : 4;
+  const numCols = orientation === 'landscape' ? 4 : 5;
 
   // Active A4 Sheet Slot (1 or 2)
   const [activeSlot, setActiveSlot] = useState(1);
@@ -79,8 +79,8 @@ export default function App() {
     const nextOrient = orientation === 'landscape' ? 'portrait' : 'landscape';
     setOrientation(nextOrient);
 
-    const nextRows = nextOrient === 'landscape' ? 3 : 4;
-    const nextCols = nextOrient === 'landscape' ? 4 : 3;
+    const nextRows = nextOrient === 'landscape' ? 5 : 4;
+    const nextCols = nextOrient === 'landscape' ? 4 : 5;
 
     const adjustPos = (pos) => ({
       r: Math.min(pos.r, nextRows - 1),
