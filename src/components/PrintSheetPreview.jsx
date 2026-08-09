@@ -158,7 +158,7 @@ export default function PrintSheetPreview({
                       fontWeight: 800,
                       color: '#64748B'
                     }}>
-                      {getCellLabel(r, c)}
+                      {getCellLabel(r, c, numRows)}
                     </span>
 
                     {isStart && (

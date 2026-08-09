@@ -132,7 +132,7 @@ export default function GridCanvas({
           {Array.from({ length: numRows }).map((_, r) =>
             Array.from({ length: numCols }).map((_, c) => {
               const cellKey = `${r},${c}`;
-              const label = getCellLabel(r, c);
+              const label = getCellLabel(r, c, numRows);
               const isStart = startPos.r === r && startPos.c === c;
               const isTarget = targetPos.r === r && targetPos.c === c;
               const obstacleTypeId = obstacleMap.get(cellKey);

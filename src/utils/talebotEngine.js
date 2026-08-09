@@ -38,9 +38,11 @@ export const OBSTACLE_TYPES = [
   { id: 'ALTO', name: 'Señal de Alto', icon: '🛑', description: 'Obstáculo de detención estándar' }
 ];
 
-export function getCellLabel(row, col) {
-  const rowLetters = ['A', 'B', 'C', 'D'];
-  return `${rowLetters[row] || row + 1}${col + 1}`;
+export function getCellLabel(row, col, numRows = 5) {
+  const rowLettersFromBottom = ['A', 'B', 'C', 'D', 'E', 'F'];
+  const letterIndex = Math.max(0, numRows - 1 - row);
+  const letter = rowLettersFromBottom[letterIndex] || 'A';
+  return `${letter}${col + 1}`;
 }
 
 export function turnLeftDir(dir) {
