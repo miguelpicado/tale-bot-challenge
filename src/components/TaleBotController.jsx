@@ -90,13 +90,31 @@ export default function TaleBotController({
         </div>
       </div>
 
-      {/* Hardware Buttons Deck (3 Columns Wide Layout) */}
+      {/* Hardware Deck - 3x3 Grid Matching TaleBot Pro Physical Top Deck */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(3, 1fr)', // 3 Columns wide as requested!
+        gridTemplateColumns: 'repeat(3, 1fr)',
         gap: '0.8rem'
       }}>
-        {/* Forward */}
+        {/* --- FILA 1: Micro, Avanzar, Baile --- */}
+
+        {/* 1. Micro / Sonido (Cían) */}
+        <button
+          onClick={() => onAddCommand(COMMAND_TYPES.SOUND)}
+          className="tb-btn"
+          style={{
+            background: COMMAND_TYPES.SOUND.color,
+            color: COMMAND_TYPES.SOUND.textColor,
+            flexDirection: 'column',
+            padding: '1.1rem 0.5rem',
+            fontSize: '0.85rem'
+          }}
+        >
+          <span style={{ fontSize: '1.7rem' }}>🔊</span>
+          <span>Micro</span>
+        </button>
+
+        {/* 2. Avanzar (Verde) */}
         <button
           onClick={() => onAddCommand(COMMAND_TYPES.FORWARD)}
           className="tb-btn"
@@ -112,55 +130,7 @@ export default function TaleBotController({
           <span>Avanzar</span>
         </button>
 
-        {/* Backward */}
-        <button
-          onClick={() => onAddCommand(COMMAND_TYPES.BACKWARD)}
-          className="tb-btn"
-          style={{
-            background: COMMAND_TYPES.BACKWARD.color,
-            color: COMMAND_TYPES.BACKWARD.textColor,
-            flexDirection: 'column',
-            padding: '1.1rem 0.5rem',
-            fontSize: '0.9rem'
-          }}
-        >
-          <span style={{ fontSize: '1.8rem' }}>⬇️</span>
-          <span>Atrás</span>
-        </button>
-
-        {/* Turn Left */}
-        <button
-          onClick={() => onAddCommand(COMMAND_TYPES.TURN_LEFT)}
-          className="tb-btn"
-          style={{
-            background: COMMAND_TYPES.TURN_LEFT.color,
-            color: COMMAND_TYPES.TURN_LEFT.textColor,
-            flexDirection: 'column',
-            padding: '1.1rem 0.5rem',
-            fontSize: '0.9rem'
-          }}
-        >
-          <span style={{ fontSize: '1.8rem' }}>↩️</span>
-          <span>Girar Izq.</span>
-        </button>
-
-        {/* Turn Right */}
-        <button
-          onClick={() => onAddCommand(COMMAND_TYPES.TURN_RIGHT)}
-          className="tb-btn"
-          style={{
-            background: COMMAND_TYPES.TURN_RIGHT.color,
-            color: COMMAND_TYPES.TURN_RIGHT.textColor,
-            flexDirection: 'column',
-            padding: '1.1rem 0.5rem',
-            fontSize: '0.9rem'
-          }}
-        >
-          <span style={{ fontSize: '1.8rem' }}>↪️</span>
-          <span>Girar Der.</span>
-        </button>
-
-        {/* Dance */}
+        {/* 3. Baile (Morado) */}
         <button
           onClick={() => onAddCommand(COMMAND_TYPES.DANCE)}
           className="tb-btn"
@@ -173,42 +143,28 @@ export default function TaleBotController({
           }}
         >
           <span style={{ fontSize: '1.7rem' }}>💃</span>
-          <span>Bailar</span>
+          <span>Baile</span>
         </button>
 
-        {/* Sound */}
+        {/* --- FILA 2: Izquierda, Reproducir (Ejecutar), Derecha --- */}
+
+        {/* 4. Girar Izquierda (Amarillo) */}
         <button
-          onClick={() => onAddCommand(COMMAND_TYPES.SOUND)}
+          onClick={() => onAddCommand(COMMAND_TYPES.TURN_LEFT)}
           className="tb-btn"
           style={{
-            background: COMMAND_TYPES.SOUND.color,
-            color: COMMAND_TYPES.SOUND.textColor,
+            background: COMMAND_TYPES.TURN_LEFT.color,
+            color: COMMAND_TYPES.TURN_LEFT.textColor,
             flexDirection: 'column',
             padding: '1.1rem 0.5rem',
-            fontSize: '0.85rem'
+            fontSize: '0.9rem'
           }}
         >
-          <span style={{ fontSize: '1.7rem' }}>🔊</span>
-          <span>Sonido</span>
+          <span style={{ fontSize: '1.8rem' }}>↩️</span>
+          <span>Izquierda</span>
         </button>
 
-        {/* Loop */}
-        <button
-          onClick={() => onAddCommand(COMMAND_TYPES.LOOP)}
-          className="tb-btn"
-          style={{
-            background: COMMAND_TYPES.LOOP.color,
-            color: COMMAND_TYPES.LOOP.textColor,
-            flexDirection: 'column',
-            padding: '1.1rem 0.5rem',
-            fontSize: '0.85rem'
-          }}
-        >
-          <span style={{ fontSize: '1.7rem' }}>🔁</span>
-          <span>Bucle</span>
-        </button>
-
-        {/* Physical Orange EJECUTAR (RUN) Button */}
+        {/* 5. Reproducir / Ejecutar (Naranja) */}
         <button
           onClick={onRunSimulation}
           className="tb-btn"
@@ -222,24 +178,75 @@ export default function TaleBotController({
           }}
         >
           {isPlaying ? <Pause size={26} /> : <Play size={26} />}
-          <span>{isPlaying ? 'Pausar' : 'Ejecutar'}</span>
+          <span>{isPlaying ? 'Pausar' : 'Reproducir'}</span>
         </button>
 
-        {/* Clear All / Borrar Button */}
+        {/* 6. Girar Derecha (Azul) */}
         <button
-          onClick={onClearCommands}
+          onClick={() => onAddCommand(COMMAND_TYPES.TURN_RIGHT)}
           className="tb-btn"
-          disabled={commands.length === 0}
           style={{
-            background: '#F8FAFC',
-            color: '#EF4444',
-            border: '2px solid #E2E8F0',
+            background: COMMAND_TYPES.TURN_RIGHT.color,
+            color: COMMAND_TYPES.TURN_RIGHT.textColor,
+            flexDirection: 'column',
+            padding: '1.1rem 0.5rem',
+            fontSize: '0.9rem'
+          }}
+        >
+          <span style={{ fontSize: '1.8rem' }}>↪️</span>
+          <span>Derecha</span>
+        </button>
+
+        {/* --- FILA 3: Loop, Retroceder, Borrar --- */}
+
+        {/* 7. Bucle / Loop (Verde Claro) */}
+        <button
+          onClick={() => onAddCommand(COMMAND_TYPES.LOOP)}
+          className="tb-btn"
+          style={{
+            background: COMMAND_TYPES.LOOP.color,
+            color: COMMAND_TYPES.LOOP.textColor,
             flexDirection: 'column',
             padding: '1.1rem 0.5rem',
             fontSize: '0.85rem'
           }}
         >
-          <Trash2 size={24} />
+          <span style={{ fontSize: '1.7rem' }}>🔁</span>
+          <span>Loop</span>
+        </button>
+
+        {/* 8. Retroceder (Rojo) */}
+        <button
+          onClick={() => onAddCommand(COMMAND_TYPES.BACKWARD)}
+          className="tb-btn"
+          style={{
+            background: COMMAND_TYPES.BACKWARD.color,
+            color: COMMAND_TYPES.BACKWARD.textColor,
+            flexDirection: 'column',
+            padding: '1.1rem 0.5rem',
+            fontSize: '0.9rem'
+          }}
+        >
+          <span style={{ fontSize: '1.8rem' }}>⬇️</span>
+          <span>Retroceder</span>
+        </button>
+
+        {/* 9. Borrar Todo (Blanco con LED Blanco) */}
+        <button
+          onClick={onClearCommands}
+          className="tb-btn"
+          disabled={commands.length === 0}
+          style={{
+            background: '#FFFFFF',
+            color: '#0F172A',
+            border: '2.5px solid #E2E8F0',
+            flexDirection: 'column',
+            padding: '1.1rem 0.5rem',
+            fontSize: '0.85rem',
+            boxShadow: '0 2px 5px rgba(0,0,0,0.05)'
+          }}
+        >
+          <Trash2 size={24} color="#EF4444" />
           <span>Borrar</span>
         </button>
       </div>
