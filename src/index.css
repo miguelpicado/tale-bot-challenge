@@ -126,7 +126,12 @@ h1, h2, h3, h4, .brand-title {
 
 /* Print CSS setup for double-sided A4 */
 @media print {
-  body {
+  html, body, #root, main, section, aside {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    position: static !important;
     background: #FFFFFF !important;
     padding: 0 !important;
     margin: 0 !important;
@@ -138,6 +143,11 @@ h1, h2, h3, h4, .brand-title {
 
   .only-print {
     display: block !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    overflow: visible !important;
   }
 
   .print-page-container {
@@ -150,6 +160,8 @@ h1, h2, h3, h4, .brand-title {
     height: 297mm !important;
     page-break-after: always !important;
     break-after: page !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
     padding: 15mm !important;
     box-sizing: border-box !important;
     display: flex !important;
