@@ -1,8 +1,43 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getCellLabel, DIRECTIONS, OBSTACLE_TYPES } from '../utils/talebotEngine';
 import { MAP_THEMES } from '../utils/presets';
 import TaleBotAvatar from './TaleBotAvatar';
-import { X, Trash2 } from 'lucide-react';
+import ObstacleIcon from './ObstacleIcon';
+import { X, Eraser } from 'lucide-react';
+
+// px — debe coincidir con el gap y el padding de .mat: robot y trazo comparten
+// esta geometría, así ambos caen exactamente en el centro de la casilla
+const GAP = 7;
+
+/** Meta: plataforma de aterrizaje con estrella, con un pulso que la señala. */
+function GoalMarker({ size }) {
+  return (
+    <svg
+      className="goal"
+      viewBox="0 0 100 100"
+      fill="none"
+      aria-hidden="true"
+      style={size ? { width: size, height: size, maxWidth: size } : undefined}
+    >
+      <circle className="goal__halo" cx="50" cy="50" r="38" />
+      <circle cx="50" cy="50" r="35" fill="#FFF6E2" />
+      <circle
+        className="goal__pad"
+        cx="50" cy="50" r="35"
+        fill="none" stroke="#FFB020" strokeWidth="3.5"
+        strokeDasharray="7 7" strokeLinecap="round"
+      />
+      <circle cx="50" cy="50" r="27" fill="none" stroke="#FFE0A6" strokeWidth="2" />
+      <path
+        d="M50 29 L55.3 42.7 L70 43.5 L58.6 52.8 L62.3 67 L50 59 L37.7 67 L41.4 52.8 L30 43.5 L44.7 42.7 Z"
+        fill="#FFB020"
+        stroke="#D98A00"
+        strokeWidth="2.5"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
 export default function GridCanvas({
   numRows = 4,
@@ -22,32 +57,61 @@ export default function GridCanvas({
 }) {
   const theme = MAP_THEMES[themeKey] || MAP_THEMES.CLASICO;
 
-  // Popover target cell: { r, c, rect } or null
   const [activePopoverCell, setActivePopoverCell] = useState(null);
   const containerRef = useRef(null);
 
-  // Active robot state
+  // Medimos el área útil de la rejilla para trazar el recorrido en píxeles
+  const matRef = useRef(null);
+  const [area, setArea] = useState({ w: 0, h: 0 });
+  useEffect(() => {
+    const el = matRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect;
+      setArea({ w: width, h: height });
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const cellW = area.w > 0 ? (area.w - (numCols - 1) * GAP) / numCols : 0;
+  const cellH = area.h > 0 ? (area.h - (numRows - 1) * GAP) / numRows : 0;
+  const centerX = (c) => c * (cellW + GAP) + cellW / 2;
+  const centerY = (r) => r * (cellH + GAP) + cellH / 2;
+
   const activeRobotR = currentRobotState ? currentRobotState.r : startPos.r;
   const activeRobotC = currentRobotState ? currentRobotState.c : startPos.c;
   const activeRobotDir = currentRobotState ? currentRobotState.dir : (startPos.dir || 0);
+  const stepMs = currentRobotState?.stepMs || 460;
+
+  // Ángulo acumulado: girar a la derecha desde el oeste debe seguir sumando 90°,
+  // no retroceder 270°. Guardamos el rumbo anterior para saber hacia dónde gira.
+  const headingRef = useRef({ dir: startPos.dir || 0, angle: DIRECTIONS[startPos.dir || 0].angle });
+  if (headingRef.current.dir !== activeRobotDir) {
+    const diff = (activeRobotDir - headingRef.current.dir + 4) % 4;
+    const turn = diff === 3 ? -90 : diff * 90;
+    headingRef.current = { dir: activeRobotDir, angle: headingRef.current.angle + turn };
+  }
+  const robotAngle = headingRef.current.angle;
 
   const obstacleMap = new Map((obstacles || []).map(o => [`${o.r},${o.c}`, o.type || 'ALTO']));
 
-  // Close popover on outside click or scroll
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (containerRef.current && !containerRef.current.contains(e.target) && !e.target.closest('.tb-popover-modal')) {
         setActivePopoverCell(null);
       }
     };
-    const handleScroll = () => {
-      setActivePopoverCell(null);
-    };
+    const handleScroll = () => setActivePopoverCell(null);
+    const handleKey = (e) => { if (e.key === 'Escape') setActivePopoverCell(null); };
+
     document.addEventListener('mousedown', handleClickOutside);
     window.addEventListener('scroll', handleScroll, true);
+    window.addEventListener('keydown', handleKey);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
       window.removeEventListener('scroll', handleScroll, true);
+      window.removeEventListener('keydown', handleKey);
     };
   }, []);
 
@@ -67,22 +131,17 @@ export default function GridCanvas({
     });
   };
 
-  // Calculate Fixed Clamped Viewport Coordinates for Popover Modal (GUARANTEES NO CUTOFF!)
+  // Posición fija anclada al viewport: el popover nunca se recorta
   let popoverFixedStyle = null;
   if (activePopoverCell && activePopoverCell.rect) {
     const { rect, r } = activePopoverCell;
-    const modalWidth = 270;
-    const modalEstimatedHeight = 320;
+    const modalWidth = 392;
+    const modalEstimatedHeight = 486;
 
     const isBottomHalf = r >= Math.floor(numRows / 2);
-    let topPos = isBottomHalf
-      ? rect.top - modalEstimatedHeight - 8
-      : rect.bottom + 8;
-
-    // Clamp topPos inside viewport bounds
+    let topPos = isBottomHalf ? rect.top - modalEstimatedHeight - 8 : rect.bottom + 8;
     topPos = Math.max(10, Math.min(window.innerHeight - modalEstimatedHeight - 10, topPos));
 
-    // Clamp leftPos inside viewport bounds
     let leftPos = rect.left + (rect.width / 2) - (modalWidth / 2);
     leftPos = Math.max(10, Math.min(window.innerWidth - modalWidth - 10, leftPos));
 
@@ -91,344 +150,198 @@ export default function GridCanvas({
       top: `${topPos}px`,
       left: `${leftPos}px`,
       width: `${modalWidth}px`,
-      zIndex: 999999,
-      background: '#FFFFFF',
-      borderRadius: '24px',
-      padding: '0.85rem',
-      boxShadow: '0 25px 60px rgba(0,0,0,0.4), 0 10px 25px rgba(255,105,0,0.25)',
-      border: '3.5px solid #FF6900',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '0.5rem',
-      overflow: 'visible'
+      zIndex: 999999
     };
   }
 
   const activeLabel = activePopoverCell ? getCellLabel(activePopoverCell.r, activePopoverCell.c, numRows) : '';
+  const activeObstacle = activePopoverCell ? obstacleMap.get(`${activePopoverCell.r},${activePopoverCell.c}`) : null;
+
+  // Reparto en píxeles: ancho de casilla = (100% − huecos) / n
+  const slot = (index, count) => `calc((100% - ${(count - 1) * GAP}px) / ${count} * ${index} + ${index * GAP}px)`;
+  const slotSize = (count) => `calc((100% - ${(count - 1) * GAP}px) / ${count})`;
 
   return (
-    <div 
+    <div
       ref={containerRef}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        position: 'relative',
-        width: '100%',
-        height: '100%',
-        minHeight: 0
-      }}
+      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', minHeight: 0 }}
     >
-      {/* Hero Canvas Container (Expands to maximum available space) */}
-      <div 
-        style={{
-          background: theme.bgGradient,
-          padding: '1.2rem',
-          borderRadius: '28px',
-          boxShadow: '0 20px 45px rgba(0, 0, 0, 0.08), 0 8px 20px rgba(255, 105, 0, 0.08)',
-          border: '5px solid #FFFFFF',
-          position: 'relative',
-          width: '100%',
-          height: '100%',
-          maxWidth: '100%',
-          maxHeight: '100%',
-          boxSizing: 'border-box',
-          aspectRatio: `${numCols} / ${numRows}`,
-          transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
-        }}
-      >
-        <div 
+      <div className="stage" style={{ aspectRatio: `${numCols} / ${numRows}` }}>
+        <div
+          ref={matRef}
+          className="mat"
           style={{
-            display: 'grid',
+            background: theme.bgGradient,
             gridTemplateRows: `repeat(${numRows}, 1fr)`,
-            gridTemplateColumns: `repeat(${numCols}, 1fr)`,
-            gap: '12px',
-            width: '100%',
-            height: '100%',
-            position: 'relative'
+            gridTemplateColumns: `repeat(${numCols}, 1fr)`
           }}
         >
-          {/* SVG Pen Lines Layer */}
-          {penLines && penLines.length > 0 && (
-            <svg 
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                pointerEvents: 'none',
-                zIndex: 15
-              }}
-            >
-              {penLines.map((line, idx) => {
-                const cellW = 100 / numCols;
-                const cellH = 100 / numRows;
-                const x1 = (line.from.c + 0.5) * cellW;
-                const y1 = (line.from.r + 0.5) * cellH;
-                const x2 = (line.to.c + 0.5) * cellW;
-                const y2 = (line.to.r + 0.5) * cellH;
-
-                return (
-                  <line
-                    key={idx}
-                    x1={`${x1}%`}
-                    y1={`${y1}%`}
-                    x2={`${x2}%`}
-                    y2={`${y2}%`}
-                    stroke="#FF0055"
-                    strokeWidth="8"
-                    strokeLinecap="round"
-                    style={{
-                      filter: 'drop-shadow(0 2px 6px rgba(255,0,85,0.4))'
-                    }}
-                  />
-                );
-              })}
+          {/* Trazo del rotulador, de centro a centro de casilla */}
+          {penLines && penLines.length > 0 && cellW > 0 && (
+            <svg className="trace" style={{ left: GAP, top: GAP, width: area.w, height: area.h }}>
+              {penLines.map((line, idx) => (
+                <line
+                  key={idx}
+                  x1={centerX(line.from.c)}
+                  y1={centerY(line.from.r)}
+                  x2={centerX(line.to.c)}
+                  y2={centerY(line.to.r)}
+                />
+              ))}
             </svg>
           )}
 
-          {/* Render Cells */}
           {Array.from({ length: numRows }).map((_, r) =>
             Array.from({ length: numCols }).map((_, c) => {
               const cellKey = `${r},${c}`;
-              const label = getCellLabel(r, c, numRows);
-              const isStart = startPos.r === r && startPos.c === c;
-              const isTarget = targetPos.r === r && targetPos.c === c;
               const obstacleTypeId = obstacleMap.get(cellKey);
               const obstacleObj = OBSTACLE_TYPES.find(o => o.id === obstacleTypeId);
-              const isRobotHere = activeRobotR === r && activeRobotC === c;
+              const isTarget = targetPos.r === r && targetPos.c === c;
               const isPopoverActive = activePopoverCell?.r === r && activePopoverCell?.c === c;
 
-              const cellBg = theme.cellColors[(r * numCols + c) % theme.cellColors.length] || theme.gridBg;
-
               return (
-                <div
+                <button
                   key={cellKey}
+                  className="cell"
+                  data-active={isPopoverActive}
+                  data-blocked={!!obstacleObj}
                   onClick={(e) => handleCellClick(r, c, e)}
+                  aria-label={`Casilla ${getCellLabel(r, c, numRows)}`}
                   style={{
-                    background: obstacleObj ? '#FFE4E6' : cellBg,
-                    border: isPopoverActive ? '3.5px solid #FF6900' : `2.5px dashed ${theme.borderColor}`,
-                    borderRadius: '20px',
-                    position: 'relative',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    userSelect: 'none',
-                    transition: 'all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                    boxShadow: isPopoverActive 
-                      ? '0 0 24px rgba(255, 105, 0, 0.45)' 
-                      : 'inset 0 2px 5px rgba(255,255,255,0.9), 0 4px 10px rgba(0,0,0,0.03)',
-                    zIndex: isPopoverActive ? 100 : 10
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isPopoverActive) e.currentTarget.style.transform = 'scale(1.03)';
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isPopoverActive) e.currentTarget.style.transform = 'scale(1)';
+                    '--cell-bg': theme.cellColors[(r + c) % theme.cellColors.length],
+                    '--cell-line': theme.borderColor,
+                    '--cell-coord': theme.coordColor,
+                    '--cell-blocked': theme.blockedBg
                   }}
                 >
-                  {/* Coordinate Badge */}
-                  <span style={{
-                    position: 'absolute',
-                    top: '6px',
-                    left: '8px',
-                    fontSize: '0.75rem',
-                    fontWeight: '800',
-                    color: '#64748B',
-                    background: 'rgba(255, 255, 255, 0.9)',
-                    padding: '2px 8px',
-                    borderRadius: '10px',
-                    backdropFilter: 'blur(4px)',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-                  }}>
-                    {label}
-                  </span>
+                  <span className="cell__coord">{getCellLabel(r, c, numRows)}</span>
 
-                  {/* Items */}
-                  {!isRobotHere && isStart && (
-                    <div style={{ fontSize: '2.4rem' }} title="Punto de Inicio">
-                      🤖
-                    </div>
-                  )}
+                  {isTarget && <GoalMarker />}
 
-                  {isTarget && (
-                    <div style={{ 
-                      fontSize: '2.6rem', 
-                      filter: 'drop-shadow(0 4px 12px rgba(255,199,0,0.6))',
-                      animation: 'pulseGlow 2s infinite ease-in-out'
-                    }} title="Meta / Objetivo">
-                      ⭐️
-                    </div>
+                  {obstacleObj && (
+                    <span
+                      className="token"
+                      data-block={!!obstacleObj.blocking}
+                      data-tilt={(r * 3 + c) % 2}
+                      title={`${obstacleObj.name} — ${obstacleObj.description}`}
+                    >
+                      <ObstacleIcon type={obstacleObj.id} size="72%" />
+                    </span>
                   )}
-
-                  {obstacleObj && !isRobotHere && (
-                    <div style={{ fontSize: '2.4rem' }} title={obstacleObj.name}>
-                      {obstacleObj.icon}
-                    </div>
-                  )}
-
-                  {/* TaleBot Avatar */}
-                  {isRobotHere && (
-                    <TaleBotAvatar
-                      size={numCols === 5 ? 64 : 74}
-                      angle={DIRECTIONS[activeRobotDir].angle}
-                      ledColor={currentRobotState?.ledColor || '#10B981'}
-                      hasWings={hasWings}
-                      hasArms={hasArms}
-                      isDancing={currentRobotState?.isDancing || currentRobotState?.commandId === 'DANCE'}
-                    />
-                  )}
-                </div>
+                </button>
               );
             })
           )}
         </div>
+
+        {/* El robot vive sobre el tapete y se desliza entre casillas */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: '21px',
+            pointerEvents: 'none',
+            zIndex: 6
+          }}
+        >
+          <div
+            style={{
+              position: 'absolute',
+              left: slot(activeRobotC, numCols),
+              top: slot(activeRobotR, numRows),
+              width: slotSize(numCols),
+              height: slotSize(numRows),
+              display: 'grid',
+              placeItems: 'center',
+              // Arranca despacio, cruza la casilla y frena: el perfil del robot real
+              transition: `left ${stepMs}ms var(--ease-drive), top ${stepMs}ms var(--ease-drive)`,
+              ['--bot-turn-ms']: `${stepMs}ms`
+            }}
+          >
+            <TaleBotAvatar
+              size="65%"
+              angle={robotAngle}
+              ledColor={currentRobotState?.ledColor || '#00BFC4'}
+              hasWings={hasWings}
+              hasArms={hasArms}
+              isDancing={currentRobotState?.commandId === 'DANCE'}
+            />
+          </div>
+        </div>
       </div>
 
-      {/* FIXED VIEWPORT-CLAMPED POPOVER MODAL (GUARANTEED NO OVERFLOW / CLIPPING!) */}
+      {/* Opciones de casilla */}
       {activePopoverCell && popoverFixedStyle && (
-        <div 
-          className="tb-popover-modal"
-          onClick={(e) => e.stopPropagation()}
-          style={popoverFixedStyle}
-        >
-          {/* Popover Header */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            borderBottom: '2px dashed #E2E8F0',
-            paddingBottom: '0.35rem'
-          }}>
-            <span style={{ fontFamily: 'Fredoka', fontWeight: 700, fontSize: '0.95rem', color: '#FF6900' }}>
-              📍 Opciones Casilla {activeLabel}
-            </span>
-            <button 
-              onClick={() => setActivePopoverCell(null)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer' }}
-            >
-              <X size={18} color="#64748B" />
+        <div className="pop tb-popover-modal" onClick={(e) => e.stopPropagation()} style={popoverFixedStyle}>
+          <div className="pop__head">
+            <span className="pop__coord">{activeLabel}</span>
+            <button className="btn btn--quiet btn--icon" onClick={() => setActivePopoverCell(null)} aria-label="Cerrar">
+              <X size={18} />
             </button>
           </div>
 
-          {/* 1. Start + Orientations */}
-          <div>
-            <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#334155', display: 'block', marginBottom: '3px' }}>
-              🤖 Definir como Punto de Inicio:
-            </span>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px' }}>
-              {DIRECTIONS.map((dirObj, idx) => (
-                <button
-                  key={dirObj.id}
-                  onClick={() => {
-                    onSetStartPos({ r: activePopoverCell.r, c: activePopoverCell.c, dir: idx });
-                    setActivePopoverCell(null);
-                  }}
-                  style={{
-                    padding: '0.3rem',
-                    borderRadius: '8px',
-                    border: '1.5px solid #BAE6FD',
-                    background: '#F0F9FF',
-                    color: '#0284C7',
-                    fontWeight: 800,
-                    fontSize: '0.75rem',
-                    cursor: 'pointer'
-                  }}
-                >
-                  {dirObj.arrow} {dirObj.name[0]}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* 2. Target Goal */}
-          <button
-            onClick={() => {
-              onSetTargetPos({ r: activePopoverCell.r, c: activePopoverCell.c });
-              setActivePopoverCell(null);
-            }}
-            style={{
-              padding: '0.45rem',
-              borderRadius: '10px',
-              border: '1.5px solid #FEF08A',
-              background: '#FEF9C3',
-              color: '#854D0E',
-              fontWeight: 800,
-              fontSize: '0.78rem',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '4px'
-            }}
-          >
-            ⭐️ Fijar como Meta / Objetivo
-          </button>
-
-          {/* 3. Obstacles Grid Picker */}
-          <div>
-            <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#334155', display: 'block', marginBottom: '3px' }}>
-              🛑 Poner Obstáculo / Pasada Intermedia:
-            </span>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(7, 1fr)', // 7 Columns x 2 Rows = All 14 obstacles visible at once without scroll!
-              gap: '3px'
-            }}>
-              {OBSTACLE_TYPES.map((obs) => {
-                const isSelected = obstacleMap.get(`${activePopoverCell.r},${activePopoverCell.c}`) === obs.id;
+          <div className="pop__group">
+            <span className="t-eyebrow">Salida y rumbo</span>
+            <div className="tiles" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+              {DIRECTIONS.map((dirObj, idx) => {
+                const isOn = startPos.r === activePopoverCell.r && startPos.c === activePopoverCell.c && (startPos.dir || 0) === idx;
                 return (
                   <button
-                    key={obs.id}
+                    key={dirObj.id}
+                    className="tile tile--dir"
+                    data-on={isOn}
+                    title={`Salir mirando al ${dirObj.name}`}
                     onClick={() => {
-                      onToggleObstacle({ r: activePopoverCell.r, c: activePopoverCell.c, type: obs.id });
+                      onSetStartPos({ r: activePopoverCell.r, c: activePopoverCell.c, dir: idx });
                       setActivePopoverCell(null);
                     }}
-                    style={{
-                      padding: '0.3rem',
-                      borderRadius: '8px',
-                      border: isSelected ? '2px solid #FF6900' : '1px solid #E2E8F0',
-                      background: isSelected ? '#FFF7ED' : '#F8FAFC',
-                      fontSize: '1rem',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}
-                    title={obs.name}
                   >
-                    {obs.icon}
+                    <span>{dirObj.arrow}</span>
+                    <span className="tile__cap">{dirObj.name}</span>
                   </button>
                 );
               })}
             </div>
           </div>
 
-          {/* 4. Clear Cell */}
           <button
+            className="tile tile--wide tile--goal"
+            onClick={() => {
+              onSetTargetPos({ r: activePopoverCell.r, c: activePopoverCell.c });
+              setActivePopoverCell(null);
+            }}
+          >
+            <GoalMarker size={26} /> Poner la meta aquí
+          </button>
+
+          <div className="pop__group">
+            <span className="t-eyebrow">Obstáculo o parada</span>
+            <div className="tiles" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
+              {OBSTACLE_TYPES.map((obs) => (
+                <button
+                  key={obs.id}
+                  className="tile tile--obs"
+                  data-on={activeObstacle === obs.id}
+                  title={obs.description}
+                  onClick={() => {
+                    onToggleObstacle({ r: activePopoverCell.r, c: activePopoverCell.c, type: obs.id });
+                    setActivePopoverCell(null);
+                  }}
+                >
+                  <ObstacleIcon type={obs.id} size={30} />
+                  <span className="tile__cap">{obs.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <button
+            className="tile tile--wide tile--clear"
             onClick={() => {
               onClearCell(activePopoverCell.r, activePopoverCell.c);
               setActivePopoverCell(null);
             }}
-            style={{
-              padding: '0.35rem',
-              borderRadius: '8px',
-              border: '1.5px solid #FECDD3',
-              background: '#FFF1F2',
-              color: '#E11D48',
-              fontWeight: 800,
-              fontSize: '0.75rem',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '4px'
-            }}
           >
-            <Trash2 size={14} /> Limpiar Casilla
+            <Eraser size={16} /> Vaciar casilla
           </button>
         </div>
       )}

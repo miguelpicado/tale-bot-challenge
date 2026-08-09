@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import confetti from 'canvas-confetti';
+import { Check, AlertTriangle } from 'lucide-react';
 import Header from './components/Header';
 import GridCanvas from './components/GridCanvas';
 import CommandSequenceBar from './components/CommandSequenceBar';
@@ -13,10 +14,20 @@ import SavePrintModal from './components/SavePrintModal';
 import ShapeCatalogDrawer from './components/ShapeCatalogDrawer';
 
 import { PRESET_CHALLENGES } from './utils/presets';
-import { simulatePath, solveNavigationPath, COMMAND_TYPES } from './utils/talebotEngine';
-import { saveChallengesToLocal, loadChallengesFromLocal, getSavedGoogleClientId } from './utils/storage';
+import { simulatePath, solveNavigationPath, durationOf, COMMAND_TYPES } from './utils/talebotEngine';
+import { saveChallengesToLocal, loadChallengesFromLocal } from './utils/storage';
 
 export default function App() {
+  // Aviso flotante: reemplaza los alert() del navegador
+  const [toast, setToast] = useState(null);
+  const toastTimer = useRef(null);
+  const notify = (message, tone = 'ok') => {
+    setToast({ message, tone });
+    clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), 3200);
+  };
+  useEffect(() => () => clearTimeout(toastTimer.current), []);
+
   // Orientation: 'landscape' (4x5) or 'portrait' (5x4)
   const [orientation, setOrientation] = useState('landscape');
   const numRows = orientation === 'landscape' ? 4 : 5;
@@ -36,7 +47,7 @@ export default function App() {
   };
 
   // Active Mode Name Badge
-  const [activeModeName, setActiveModeName] = useState('Navegación y Obstáculos');
+  const [activeModeName, setActiveModeName] = useState('Navegación con obstáculos');
   const [isDrawingMode, setIsDrawingMode] = useState(false);
 
   // Saved challenges in LocalStorage
@@ -72,7 +83,7 @@ export default function App() {
     const updatedList = [newChallenge, ...savedChallenges];
     setSavedChallenges(updatedList);
     saveChallengesToLocal(updatedList);
-    alert('¡Reto guardado con éxito en tu biblioteca local!');
+    notify('Reto guardado en tu biblioteca.');
   };
 
   const handleToggleOrientation = () => {
@@ -150,33 +161,52 @@ export default function App() {
     setCurrentChallenge({ ...currentChallenge, commands: cmds });
   };
 
+  // Borrar es un reset completo: se va la secuencia, el trazo y el robot vuelve
+  // a la casilla de salida
   const handleClearCommands = () => {
+    stopSimulation();
     setCurrentChallenge({ ...currentChallenge, commands: [] });
   };
 
   const handleAutoSolvePath = () => {
-    const solvedCmds = solveNavigationPath(
-      currentChallenge.start,
-      currentChallenge.target,
-      currentChallenge.obstacles,
-      numRows,
-      numCols
-    );
+    const { start, target, obstacles } = currentChallenge;
 
-    if (solvedCmds) {
-      solvedCmds.push(COMMAND_TYPES.DANCE);
-      setCurrentChallenge({ ...currentChallenge, commands: solvedCmds });
-      confetti({ particleCount: 60, spread: 70, origin: { y: 0.7 } });
-    } else {
-      alert('No se encontró un camino válido hasta la meta con los obstáculos actuales.');
+    // La meta encima de la salida no tiene recorrido que resolver: el BFS
+    // devuelve [], que es truthy, y antes se daba por resuelto sin generar nada.
+    if (start.r === target.r && start.c === target.c) {
+      notify('La meta está en la casilla de salida. Colócala en otra casilla.', 'warn');
+      return;
     }
+
+    const solvedCmds = solveNavigationPath(start, target, obstacles, numRows, numCols);
+
+    if (!solvedCmds || solvedCmds.length === 0) {
+      notify('No hay camino hasta la meta. Quita algún obstáculo o mueve la salida.', 'warn');
+      return;
+    }
+
+    solvedCmds.push(COMMAND_TYPES.DANCE);
+    setCurrentChallenge({ ...currentChallenge, commands: solvedCmds });
+    notify(`Recorrido resuelto en ${solvedCmds.length - 1} pasos.`);
+    confetti({ particleCount: 60, spread: 70, origin: { y: 0.7 } });
   };
+
+  const playTimer = useRef(null);
+
+  const stopSimulation = () => {
+    clearTimeout(playTimer.current);
+    playTimer.current = null;
+    setIsPlaying(false);
+    setRobotSimState(null);
+    setActivePenLines([]);
+    setCurrentStep(0);
+  };
+
+  useEffect(() => () => clearTimeout(playTimer.current), []);
 
   const handleRunSimulation = () => {
     if (isPlaying) {
-      setIsPlaying(false);
-      setRobotSimState(null);
-      setActivePenLines([]);
+      stopSimulation();
       return;
     }
 
@@ -189,11 +219,13 @@ export default function App() {
 
     setIsPlaying(true);
     setCurrentStep(0);
+    setActivePenLines([]);
 
-    let step = 0;
-    const interval = setInterval(() => {
+    // Cada comando dura lo suyo: avanzar cunde, girar es corto, bailar ocupa
+    // un compás. El robot recibe su duración para animar con la misma cadencia.
+    const advance = (step) => {
       if (step >= trajectory.length) {
-        clearInterval(interval);
+        playTimer.current = null;
         setIsPlaying(false);
         const lastPos = trajectory[trajectory.length - 1];
         if (lastPos.r === currentChallenge.target.r && lastPos.c === currentChallenge.target.c) {
@@ -202,11 +234,17 @@ export default function App() {
         return;
       }
 
-      setRobotSimState(trajectory[step]);
+      const frame = trajectory[step];
+      const ms = durationOf(frame.commandId);
+
+      setRobotSimState({ ...frame, stepMs: ms });
       setCurrentStep(step);
-      setActivePenLines(penLines.slice(0, step));
-      step++;
-    }, 550);
+      setActivePenLines(penLines.filter(l => l.step <= step));
+
+      playTimer.current = setTimeout(() => advance(step + 1), ms);
+    };
+
+    advance(0);
   };
 
   const [generatedChallengesList, setGeneratedChallengesList] = useState([]);
@@ -216,7 +254,7 @@ export default function App() {
       setGeneratedChallengesList(generatedList);
       setChallenge1(generatedList[0]);
       setChallenge2(generatedList[1]);
-      setActiveModeName(`Fichas Autogeneradas (${generatedList.length} Retos)`);
+      setActiveModeName(`Fichas generadas · ${generatedList.length} retos`);
       setShowPrintPreview(true);
     }
   };
@@ -235,8 +273,7 @@ export default function App() {
   };
 
   return (
-    <div style={{ height: '100vh', maxMaxHeight: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      {/* Header */}
+    <div className="app">
       <Header
         orientation={orientation}
         onToggleOrientation={handleToggleOrientation}
@@ -247,33 +284,9 @@ export default function App() {
         activeModeName={activeModeName}
       />
 
-      {/* Main Hero Workspace - Fits viewport without scroll, Map expands to max space */}
-      <main style={{
-        maxWidth: '1440px',
-        width: '100%',
-        margin: '0 auto',
-        padding: '0.6rem 1.2rem',
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-        gap: '0.8rem',
-        boxSizing: 'border-box',
-        overflow: 'hidden'
-      }}>
-        {/* Top Split Area: Maximum Hero Grid Map + Fluid Right Controller Sidebar */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 400px',
-          gap: '1.2rem',
-          alignItems: 'stretch',
-          width: '100%',
-          flex: 1,
-          minHeight: 0,
-          overflow: 'hidden'
-        }}>
-          {/* Hero Grid Canvas Column (Expands Map to Maximum Available Area) */}
-          <section style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', minHeight: 0, overflow: 'hidden' }}>
+      <main className="work">
+        <div className="workspace">
+          <section className="workspace__stage">
             <GridCanvas
               numRows={numRows}
               numCols={numCols}
@@ -290,8 +303,7 @@ export default function App() {
             />
           </section>
 
-          {/* Right Controller Sidebar */}
-          <aside style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%', height: '100%', minHeight: 0, overflowY: 'auto' }}>
+          <aside className="rail">
             <TaleBotController
               commands={currentChallenge.commands || []}
               onAddCommand={handleAddCommand}
@@ -308,13 +320,19 @@ export default function App() {
           </aside>
         </div>
 
-        {/* FULL WIDTH Command Sequence Bar aligned under BOTH map and sidebar */}
         <CommandSequenceBar
           commands={currentChallenge.commands || []}
           isPlaying={isPlaying}
           currentStep={currentStep}
         />
       </main>
+
+      {toast && (
+        <div className={`toast${toast.tone === 'warn' ? ' toast--warn' : ''}`} role="status">
+          {toast.tone === 'warn' ? <AlertTriangle size={16} /> : <Check size={16} />}
+          {toast.message}
+        </div>
+      )}
 
       {/* Modals */}
       {showNewChallengeModal && (
@@ -324,7 +342,7 @@ export default function App() {
           onGenerateA4Pages={handleGenerateA4Pages}
           onOpenShapesMode={() => {
             setIsDrawingMode(true);
-            setActiveModeName('Dibujo y Formas para Rotuladores');
+            setActiveModeName('Dibujo con rotulador');
           }}
           onClose={() => setShowNewChallengeModal(false)}
         />
@@ -375,6 +393,7 @@ export default function App() {
             setSavedChallenges(merged);
             saveChallengesToLocal(merged);
           }}
+          onNotify={notify}
           onClose={() => setShowLibrary(false)}
         />
       )}

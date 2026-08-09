@@ -1,13 +1,14 @@
-import React, { useRef } from 'react';
+import { useRef } from 'react';
 import { PRESET_CHALLENGES } from '../utils/presets';
 import { exportChallengesToJSON, importChallengesFromJSON } from '../utils/storage';
-import { FolderOpen, Download, Upload, Trash2, CheckCircle2, X } from 'lucide-react';
+import { Download, Upload, Trash2, X } from 'lucide-react';
 
 export default function SavedLibraryModal({
   savedChallenges = [],
   onLoadChallenge,
   onDeleteChallenge,
   onImportChallenges,
+  onNotify = () => {},
   onClose
 }) {
   const fileInputRef = useRef(null);
@@ -18,166 +19,81 @@ export default function SavedLibraryModal({
 
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
-    if (file) {
-      try {
-        const imported = await importChallengesFromJSON(file);
-        if (Array.isArray(imported)) {
-          onImportChallenges(imported);
-          alert('¡Colección de retos importada con éxito!');
-        }
-      } catch (err) {
-        alert('Error importando archivo: ' + err.message);
+    if (!file) return;
+    try {
+      const imported = await importChallengesFromJSON(file);
+      if (Array.isArray(imported)) {
+        onImportChallenges(imported);
+        onNotify(`${imported.length} retos importados.`);
       }
+    } catch (err) {
+      onNotify(`No se pudo leer el archivo: ${err.message}`, 'warn');
     }
   };
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      background: 'rgba(15, 23, 42, 0.75)',
-      backdropFilter: 'blur(8px)',
-      zIndex: 1000,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '1rem'
-    }}>
-      <div className="tb-card" style={{
-        width: '100%',
-        maxWidth: '750px',
-        maxHeight: '90vh',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '1.2rem',
-        padding: '1.8rem'
-      }}>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '2px solid #E2E8F0', paddingBottom: '0.8rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <FolderOpen size={24} color="#8B5CF6" />
-            <h2 style={{ fontFamily: 'Fredoka', color: '#0F172A', fontSize: '1.4rem' }}>
-              Biblioteca de Retos TaleBot
-            </h2>
+    <div className="scrim no-print" onClick={onClose}>
+      <div className="sheet" style={{ maxWidth: '780px' }} onClick={(e) => e.stopPropagation()}>
+        <div className="sheet__head">
+          <div>
+            <h2 className="sheet__title">Biblioteca</h2>
+            <p className="sheet__sub">
+              {PRESET_CHALLENGES.length} retos de ejemplo · {savedChallenges.length} guardados por ti
+            </p>
           </div>
 
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
-            <X size={24} color="#64748B" />
-          </button>
+          <div style={{ display: 'flex', gap: '.4rem', alignItems: 'center' }}>
+            <button className="btn btn--outline btn--sm" onClick={handleExport}>
+              <Download size={14} /> Exportar
+            </button>
+            <button className="btn btn--outline btn--sm" onClick={() => fileInputRef.current?.click()}>
+              <Upload size={14} /> Importar
+            </button>
+            <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".json" style={{ display: 'none' }} />
+            <button className="btn btn--quiet btn--icon" onClick={onClose} aria-label="Cerrar">
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
-        {/* Action Toolbar (Export/Import) */}
-        <div style={{ display: 'flex', gap: '0.8rem', flexWrap: 'wrap' }}>
-          <button onClick={handleExport} className="tb-btn tb-btn-purple" style={{ fontSize: '0.85rem', padding: '0.5rem 1rem' }}>
-            <Download size={16} /> Exportar Fichero JSON
-          </button>
-
-          <button 
-            onClick={() => fileInputRef.current?.click()} 
-            className="tb-btn tb-btn-secondary" 
-            style={{ fontSize: '0.85rem', padding: '0.5rem 1rem' }}
-          >
-            <Upload size={16} /> Importar Retos (.json)
-          </button>
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            onChange={handleFileChange} 
-            accept=".json" 
-            style={{ display: 'none' }} 
-          />
-        </div>
-
-        {/* Challenges List Container */}
-        <div style={{ overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem', paddingRight: '4px' }}>
-          {/* Section 1: Presets */}
-          <div>
-            <h3 style={{ fontFamily: 'Fredoka', fontSize: '1.1rem', color: '#334155', marginBottom: '0.6rem' }}>
-              ⭐ Retos Predefinidos de la Aplicación
-            </h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0.8rem' }}>
+        <div className="sheet__body">
+          <section>
+            <span className="t-eyebrow">Retos de ejemplo</span>
+            <div className="grid-cards" style={{ marginTop: '.6rem' }}>
               {PRESET_CHALLENGES.map((ch) => (
-                <div
-                  key={ch.id}
-                  style={{
-                    background: '#F8FAFC',
-                    border: '2px solid #E2E8F0',
-                    borderRadius: '14px',
-                    padding: '0.8rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    gap: '0.5rem'
-                  }}
-                >
+                <div key={ch.id} className="card">
                   <div>
-                    <h4 style={{ fontFamily: 'Fredoka', fontSize: '0.95rem', color: '#0F172A' }}>
-                      {ch.title}
-                    </h4>
-                    <p style={{ fontSize: '0.75rem', color: '#64748B', marginTop: '2px' }}>
-                      {ch.story}
-                    </p>
+                    <div className="card__t">{ch.title}</div>
+                    <div className="card__d">{ch.story}</div>
                   </div>
-
-                  <button
-                    onClick={() => onLoadChallenge(ch)}
-                    className="tb-btn tb-btn-primary"
-                    style={{ fontSize: '0.75rem', padding: '0.4rem 0.8rem', justifyContent: 'center' }}
-                  >
-                    Cargar Reto
-                  </button>
+                  <div className="card__actions">
+                    <button className="btn btn--outline btn--sm btn--block" onClick={() => onLoadChallenge(ch)}>
+                      Abrir
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
-          </div>
+          </section>
 
-          {/* Section 2: Custom Saved */}
-          {savedChallenges.length > 0 && (
-            <div>
-              <h3 style={{ fontFamily: 'Fredoka', fontSize: '1.1rem', color: '#334155', marginBottom: '0.6rem' }}>
-                ✏️ Mis Retos Guardados
-              </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0.8rem' }}>
+          {savedChallenges.length > 0 ? (
+            <section>
+              <span className="t-eyebrow">Mis retos</span>
+              <div className="grid-cards" style={{ marginTop: '.6rem' }}>
                 {savedChallenges.map((ch) => (
-                  <div
-                    key={ch.id}
-                    style={{
-                      background: '#F0F9FF',
-                      border: '2px solid #BAE6FD',
-                      borderRadius: '14px',
-                      padding: '0.8rem',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'space-between',
-                      gap: '0.5rem'
-                    }}
-                  >
+                  <div key={ch.id} className="card">
                     <div>
-                      <h4 style={{ fontFamily: 'Fredoka', fontSize: '0.95rem', color: '#0369A1' }}>
-                        {ch.title}
-                      </h4>
-                      <p style={{ fontSize: '0.75rem', color: '#0284C7', marginTop: '2px' }}>
-                        {ch.story}
-                      </p>
+                      <div className="card__t">{ch.title}</div>
+                      <div className="card__d">{ch.story}</div>
                     </div>
-
-                    <div style={{ display: 'flex', gap: '0.4rem' }}>
-                      <button
-                        onClick={() => onLoadChallenge(ch)}
-                        className="tb-btn tb-btn-primary"
-                        style={{ flex: 1, fontSize: '0.75rem', padding: '0.4rem', justifyContent: 'center' }}
-                      >
-                        Cargar
+                    <div className="card__actions">
+                      <button className="btn btn--outline btn--sm" style={{ flex: 1 }} onClick={() => onLoadChallenge(ch)}>
+                        Abrir
                       </button>
-
                       <button
+                        className="btn btn--danger btn--sm btn--icon"
                         onClick={() => onDeleteChallenge(ch.id)}
-                        className="tb-btn tb-btn-secondary"
-                        style={{ padding: '0.4rem', color: '#EF4444' }}
-                        title="Eliminar reto"
+                        aria-label={`Borrar ${ch.title}`}
                       >
                         <Trash2 size={14} />
                       </button>
@@ -185,7 +101,14 @@ export default function SavedLibraryModal({
                   </div>
                 ))}
               </div>
-            </div>
+            </section>
+          ) : (
+            <section className="panel" style={{ padding: '1.1rem', textAlign: 'center', boxShadow: 'none', background: 'var(--paper-2)' }}>
+              <div className="card__t">Aún no has guardado ningún reto</div>
+              <p className="t-help" style={{ marginTop: '.25rem' }}>
+                Monta un reto en el tablero y púlsalo en «Guardar o imprimir» para tenerlo aquí.
+              </p>
+            </section>
           )}
         </div>
       </div>

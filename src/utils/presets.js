@@ -1,13 +1,20 @@
 // Map Themes & Preset Challenges for TaleBot Pro
+//
+// Cada tema define un tapete (mat) y dos tonos de casilla que se alternan en
+// damero. Dos tonos, no seis: el color con significado es el del robot, la
+// meta y los obstáculos — el tapete solo tiene que sostenerlos.
 
 export const MAP_THEMES = {
   CLASICO: {
     id: 'CLASICO',
-    name: 'Matata Clásico 🎨',
-    bgGradient: 'linear-gradient(135deg, #E0F2FE 0%, #F0F9FF 100%)',
+    name: 'Estudio',
+    emoji: '🎨',
+    bgGradient: 'linear-gradient(160deg, #F3EDE3 0%, #EDE5D9 100%)',
     gridBg: '#FFFFFF',
-    borderColor: '#93C5FD',
-    cellColors: ['#FEF08A', '#BBF7D0', '#BFDBFE', '#FED7AA', '#FBCFE8', '#DDD6FE'],
+    borderColor: 'rgba(26,20,16,.07)',
+    coordColor: 'rgba(26,20,16,.34)',
+    blockedBg: '#FDEAE0',
+    cellColors: ['#FFFFFF', '#FBF7F1'],
     icons: {
       start: '🤖',
       target: '⭐️',
@@ -19,12 +26,15 @@ export const MAP_THEMES = {
   },
   ESPACIO: {
     id: 'ESPACIO',
-    name: 'Espacio Estelar 🚀',
-    bgGradient: 'linear-gradient(135deg, #1E1B4B 0%, #312E81 100%)',
-    gridBg: '#0F172A',
-    borderColor: '#6366F1',
-    cellColors: ['#1E293B', '#334155', '#1E1B4B', '#312E81'],
-    textColor: '#F8FAFC',
+    name: 'Órbita',
+    emoji: '🚀',
+    bgGradient: 'linear-gradient(160deg, #10152E 0%, #171F44 100%)',
+    gridBg: '#141B3A',
+    borderColor: 'rgba(140,165,255,.16)',
+    coordColor: 'rgba(220,230,255,.45)',
+    blockedBg: '#2A1B3D',
+    cellColors: ['#1A2350', '#151C43'],
+    textColor: '#F4F6FF',
     icons: {
       start: '🚀',
       target: '🪐',
@@ -36,11 +46,14 @@ export const MAP_THEMES = {
   },
   SELVA: {
     id: 'SELVA',
-    name: 'Selva Salvaje 🦁',
-    bgGradient: 'linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%)',
-    gridBg: '#F0FDF4',
-    borderColor: '#34D399',
-    cellColors: ['#DCFCE7', '#FEF9C3', '#E0E7FF', '#FFEDD5'],
+    name: 'Selva',
+    emoji: '🦁',
+    bgGradient: 'linear-gradient(160deg, #E4EFDD 0%, #D8E8CF 100%)',
+    gridBg: '#F4F9F0',
+    borderColor: 'rgba(30,60,25,.10)',
+    coordColor: 'rgba(30,60,25,.38)',
+    blockedBg: '#FBE7DC',
+    cellColors: ['#FBFDF8', '#F0F7EA'],
     icons: {
       start: '🚙',
       target: '🦁',
@@ -52,11 +65,14 @@ export const MAP_THEMES = {
   },
   PIRATA: {
     id: 'PIRATA',
-    name: 'Isla del Tesoro 🏴‍☠️',
-    bgGradient: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)',
-    gridBg: '#FFFBEB',
-    borderColor: '#F59E0B',
-    cellColors: ['#FEF3C7', '#BAE6FD', '#FDE68A', '#FECA57'],
+    name: 'Isla',
+    emoji: '🏴‍☠️',
+    bgGradient: 'linear-gradient(160deg, #F1E2C6 0%, #E8D5B0 100%)',
+    gridBg: '#FFFDF6',
+    borderColor: 'rgba(90,60,15,.12)',
+    coordColor: 'rgba(90,60,15,.42)',
+    blockedBg: '#F6DFC8',
+    cellColors: ['#FFFCF4', '#F9F1E1'],
     icons: {
       start: '🏴‍☠️',
       target: '💎',
@@ -68,11 +84,14 @@ export const MAP_THEMES = {
   },
   ROTULADOR: {
     id: 'ROTULADOR',
-    name: 'Lienzo Limpio (Para Rotuladores) 🖊️',
-    bgGradient: '#FFFFFF',
+    name: 'Lienzo',
+    emoji: '🖊️',
+    bgGradient: '#EFEAE2',
     gridBg: '#FFFFFF',
-    borderColor: '#CBD5E1',
-    cellColors: ['#FFFFFF'],
+    borderColor: 'rgba(26,20,16,.10)',
+    coordColor: 'rgba(26,20,16,.30)',
+    blockedBg: '#F6F2EC',
+    cellColors: ['#FFFFFF', '#FFFFFF'],
     icons: {
       start: '🤖',
       target: '🎯',

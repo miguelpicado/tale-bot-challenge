@@ -1,98 +1,69 @@
-import React from 'react';
-import { FolderOpen, Cloud, Printer, X, Sparkles } from 'lucide-react';
+import { FolderOpen, Cloud, Printer, X, ChevronRight } from 'lucide-react';
 
-export default function SavePrintModal({
-  onSaveLocal,
-  onOpenDrive,
-  onOpenPrint,
-  onClose
-}) {
+const ACTIONS = [
+  {
+    id: 'local',
+    icon: FolderOpen,
+    title: 'Guardar en la biblioteca',
+    desc: 'Se queda en este navegador, sin cuenta ni conexión.',
+    bg: 'var(--violet-soft)',
+    fg: 'var(--violet)'
+  },
+  {
+    id: 'drive',
+    icon: Cloud,
+    title: 'Guardar en Google Drive',
+    desc: 'Sube la colección a tu propia cuenta.',
+    bg: 'var(--lagoon-soft)',
+    fg: '#007A7D'
+  },
+  {
+    id: 'print',
+    icon: Printer,
+    title: 'Imprimir folios A4',
+    desc: 'Retos, soluciones al dorso y obstáculos recortables.',
+    bg: 'var(--ember-soft)',
+    fg: 'var(--ember-deep)'
+  }
+];
+
+export default function SavePrintModal({ onSaveLocal, onOpenDrive, onOpenPrint, onClose }) {
+  const run = {
+    local: onSaveLocal,
+    drive: onOpenDrive,
+    print: onOpenPrint
+  };
+
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      background: 'rgba(15, 23, 42, 0.75)',
-      backdropFilter: 'blur(8px)',
-      zIndex: 1000,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '1rem'
-    }}>
-      <div className="tb-card" style={{
-        width: '100%',
-        maxWidth: '480px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '1.2rem',
-        padding: '1.8rem'
-      }}>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '2px solid #E2E8F0', paddingBottom: '0.8rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <Sparkles size={24} color="#FF6900" />
-            <h2 style={{ fontFamily: 'Fredoka', color: '#0F172A', fontSize: '1.4rem' }}>
-              Guardar e Imprimir Fichas
-            </h2>
+    <div className="scrim no-print" onClick={onClose}>
+      <div className="sheet" style={{ maxWidth: '460px' }} onClick={(e) => e.stopPropagation()}>
+        <div className="sheet__head">
+          <div>
+            <h2 className="sheet__title">Guardar o imprimir</h2>
+            <p className="sheet__sub">Elige qué hacer con los retos que tienes montados.</p>
           </div>
-
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
-            <X size={24} color="#64748B" />
+          <button className="btn btn--quiet btn--icon" onClick={onClose} aria-label="Cerrar">
+            <X size={18} />
           </button>
         </div>
 
-        {/* 3 Main Action Choices */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-          {/* Choice 1: Save Local */}
-          <button
-            onClick={() => {
-              onSaveLocal();
-              onClose();
-            }}
-            className="tb-btn tb-btn-purple"
-            style={{ padding: '0.8rem 1.2rem', justifyContent: 'flex-start', fontSize: '0.95rem' }}
-          >
-            <FolderOpen size={22} />
-            <div style={{ textAlign: 'left' }}>
-              <div style={{ fontWeight: 700 }}>Guardar en Biblioteca Local</div>
-              <div style={{ fontSize: '0.75rem', opacity: 0.9 }}>Almacena el reto en tu navegador</div>
-            </div>
-          </button>
-
-          {/* Choice 2: Google Drive */}
-          <button
-            onClick={() => {
-              onOpenDrive();
-              onClose();
-            }}
-            className="tb-btn tb-btn-primary"
-            style={{ padding: '0.8rem 1.2rem', justifyContent: 'flex-start', fontSize: '0.95rem' }}
-          >
-            <Cloud size={22} />
-            <div style={{ textAlign: 'left' }}>
-              <div style={{ fontWeight: 700 }}>Guardar en Google Drive</div>
-              <div style={{ fontSize: '0.75rem', opacity: 0.9 }}>Sincroniza tus colecciones en tu nube</div>
-            </div>
-          </button>
-
-          {/* Choice 3: Print A4 */}
-          <button
-            onClick={() => {
-              onOpenPrint();
-              onClose();
-            }}
-            className="tb-btn tb-btn-yellow"
-            style={{ padding: '0.8rem 1.2rem', justifyContent: 'flex-start', fontSize: '0.95rem' }}
-          >
-            <Printer size={22} />
-            <div style={{ textAlign: 'left' }}>
-              <div style={{ fontWeight: 700 }}>Imprimir Fichas + Recortables A4</div>
-              <div style={{ fontSize: '0.75rem', opacity: 0.9 }}>Fichas de ejercicios, soluciones y 12 obstáculos</div>
-            </div>
-          </button>
+        <div className="sheet__body" style={{ gap: '.6rem' }}>
+          {ACTIONS.map(({ id, icon: Icon, title, desc, bg, fg }) => (
+            <button
+              key={id}
+              className="act"
+              onClick={() => { run[id](); onClose(); }}
+            >
+              <span className="act__ico" style={{ '--act-bg': bg, '--act-fg': fg }}>
+                <Icon size={19} />
+              </span>
+              <span>
+                <span className="act__t" style={{ display: 'block' }}>{title}</span>
+                <span className="act__d" style={{ display: 'block' }}>{desc}</span>
+              </span>
+              <ChevronRight className="act__go" size={17} />
+            </button>
+          ))}
         </div>
       </div>
     </div>

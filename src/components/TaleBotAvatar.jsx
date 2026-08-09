@@ -1,96 +1,84 @@
-import React from 'react';
-
+/**
+ * El robot visto desde arriba, que es como se mira el tablero.
+ * Carcasa blanca de esquinas muy redondeadas, ruedas de color a los lados,
+ * los dos ojos asomando por el morro y la roseta de botones en la cubierta.
+ */
 export default function TaleBotAvatar({
   size = 80,
   angle = 0,
-  ledColor = '#10B981',
+  ledColor = '#00BFC4',
   hasWings = false,
   hasArms = false,
-  isDancing = false
+  isDancing = false,
+  idle = false,
+  wheelColor = '#FF7A1B'
 }) {
   return (
-    <div
-      style={{
-        width: size,
-        height: size,
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        transform: `rotate(${angle}deg)`,
-        transition: 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
-        position: 'relative'
-      }}
-      className={isDancing ? 'dancing-robot' : ''}
-    >
-      <svg
-        width={size}
-        height={size}
-        viewBox="0 0 120 120"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        style={{ filter: 'drop-shadow(0px 8px 16px rgba(255, 150, 0, 0.4))' }}
-      >
-        {/* Direction Nose Pointer (Front Blue Arrow) */}
-        <polygon points="60,6 52,18 68,18" fill="#00A3FF" stroke="#FFFFFF" strokeWidth="2" />
+    <div className="bot" style={{ width: size, height: size, transform: `rotate(${angle}deg)` }}>
+      <div className={`bot__body${isDancing ? ' bot__body--dance' : idle ? ' bot__body--idle' : ''}`}>
+      <svg width="100%" height="100%" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="tbShell" x1="34" y1="12" x2="86" y2="108" gradientUnits="userSpaceOnUse">
+            <stop stopColor="#FFFFFF" />
+            <stop offset="1" stopColor="#EFEAE3" />
+          </linearGradient>
+          <radialGradient id="tbEye" cx="0.38" cy="0.3" r="0.8">
+            <stop stopColor="#4A4741" />
+            <stop offset="1" stopColor="#17140F" />
+          </radialGradient>
+        </defs>
 
-        {/* Outer Shadow & Base Wheels */}
-        <rect x="25" y="96" width="16" height="14" rx="6" fill="#D97706" />
-        <rect x="79" y="96" width="16" height="14" rx="6" fill="#D97706" />
+        {/* Sombra proyectada */}
+        <rect x="16" y="20" width="88" height="88" rx="34" fill="rgba(26,20,16,.22)" />
 
-        {/* Clip-on Wings (If active) */}
+        {/* Alas y brazos de clip, cuando el reto los pide */}
         {hasWings && (
           <g>
-            {/* Left Wing */}
-            <path d="M 22 55 Q 2 30 10 70 Z" fill="#38BDF8" stroke="#0284C7" strokeWidth="3" />
-            {/* Right Wing */}
-            <path d="M 98 55 Q 118 30 110 70 Z" fill="#38BDF8" stroke="#0284C7" strokeWidth="3" />
+            <path d="M26 34 Q0 16 6 52 Z" fill="#7FE3E6" stroke="#00BFC4" strokeWidth="3" strokeLinejoin="round" />
+            <path d="M94 34 Q120 16 114 52 Z" fill="#7FE3E6" stroke="#00BFC4" strokeWidth="3" strokeLinejoin="round" />
           </g>
         )}
-
-        {/* Clip-on Robot Arms (If active) */}
         {hasArms && (
           <g>
-            {/* Left Arm */}
-            <rect x="8" y="55" width="16" height="12" rx="4" fill="#F97316" stroke="#FFFFFF" strokeWidth="2" />
-            {/* Right Arm */}
-            <rect x="96" y="55" width="16" height="12" rx="4" fill="#F97316" stroke="#FFFFFF" strokeWidth="2" />
+            <rect x="0" y="80" width="22" height="12" rx="6" fill="#FF5C1B" />
+            <rect x="98" y="80" width="22" height="12" rx="6" fill="#FF5C1B" />
           </g>
         )}
 
-        {/* TaleBot Pro Cylinder Main Body */}
-        <rect x="24" y="20" width="72" height="84" rx="36" fill="url(#bodyGradient)" stroke="#FFFFFF" strokeWidth="4" />
+        {/* Ruedas: dos tapas naranjas que sobresalen por los costados */}
+        <rect x="1" y="34" width="26" height="52" rx="13" fill={wheelColor} />
+        <rect x="93" y="34" width="26" height="52" rx="13" fill={wheelColor} />
 
-        {/* Top Head LED Light Ring (Hardware LEDs) */}
-        <ellipse cx="60" cy="30" rx="24" ry="7" fill={ledColor} style={{ filter: `drop-shadow(0 0 8px ${ledColor})` }} />
-        <ellipse cx="60" cy="30" rx="18" ry="4" fill="#FFFFFF" opacity="0.6" />
+        {/* Carcasa */}
+        <rect x="19" y="15" width="82" height="90" rx="33" fill="url(#tbShell)" />
+        <rect x="20" y="16" width="80" height="88" rx="32" fill="none" stroke="#DCD5CA" strokeWidth="2" />
 
-        {/* Dark Visor Faceplate */}
-        <rect x="34" y="44" width="52" height="34" rx="16" fill="#0F172A" stroke="#334155" strokeWidth="2" />
+        {/* Ojos: van delante y son lo que marca hacia dónde mira */}
+        <ellipse cx="45" cy="33" rx="12" ry="10.5" fill="#E4DED4" />
+        <ellipse cx="75" cy="33" rx="12" ry="10.5" fill="#E4DED4" />
+        <ellipse cx="45" cy="33" rx="9.6" ry="8.2" fill="url(#tbEye)" />
+        <ellipse cx="75" cy="33" rx="9.6" ry="8.2" fill="url(#tbEye)" />
+        <circle cx="41.6" cy="30.4" r="2.8" fill="#FFFFFF" />
+        <circle cx="71.6" cy="30.4" r="2.8" fill="#FFFFFF" />
 
-        {/* Glowing Expressive Eyes */}
-        <circle cx="48" cy="61" r="7" fill="#00E5FF" style={{ filter: 'drop-shadow(0 0 6px #00E5FF)' }} />
-        <circle cx="72" cy="61" r="7" fill="#00E5FF" style={{ filter: 'drop-shadow(0 0 6px #00E5FF)' }} />
+        {/* Roseta de la cubierta, en cruz alrededor del arranque */}
+        <g>
+          <rect x="53" y="53" width="14" height="14" rx="5" fill="#10B981" />
+          <rect x="53" y="81" width="14" height="14" rx="5" fill="#EF4444" />
+          <rect x="39" y="67" width="14" height="14" rx="5" fill="#FFC700" />
+          <rect x="67" y="67" width="14" height="14" rx="5" fill="#00A3FF" />
+          <rect x="51.5" y="65.5" width="17" height="17" rx="6" fill="#FF7A1B" />
+          <path d="M57 69.5 L64.5 74 L57 78.5 Z" fill="#FFFFFF" />
+        </g>
 
-        {/* Eye Shine Highlights */}
-        <circle cx="50" cy="59" r="2.5" fill="#FFFFFF" />
-        <circle cx="74" cy="59" r="2.5" fill="#FFFFFF" />
-
-        {/* Cute Smile Curve */}
-        <path d="M 54 72 Q 60 76 66 72" stroke="#00E5FF" strokeWidth="2" strokeLinecap="round" />
-
-        {/* TaleBot Pro Body Badge Logo */}
-        <circle cx="60" cy="89" r="6" fill="#00A3FF" />
-        <path d="M 57 89 L 63 89" stroke="#FFFFFF" strokeWidth="2" />
-
-        {/* Definitions for Gradients */}
-        <defs>
-          <linearGradient id="bodyGradient" x1="24" y1="20" x2="96" y2="104" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#FFD166" />
-            <stop offset="0.5" stopColor="#FFB703" />
-            <stop offset="1" stopColor="#FB8500" />
-          </linearGradient>
-        </defs>
+        {/* Testigos de la cubierta: se tiñen con el comando en curso */}
+        <g>
+          <circle cx="52" cy="99" r="2.6" fill={ledColor} opacity="0.5" />
+          <circle cx="60" cy="99" r="2.6" fill={ledColor} opacity="0.75" />
+          <circle cx="68" cy="99" r="2.6" fill={ledColor} />
+        </g>
       </svg>
+      </div>
     </div>
   );
 }
