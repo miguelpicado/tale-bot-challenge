@@ -300,11 +300,6 @@ export default function App() {
               onRunSimulation={handleRunSimulation}
               onAutoSolvePath={handleAutoSolvePath}
               isPlaying={isPlaying}
-              penMarkerActive={currentChallenge.penMarkerMode}
-              onTogglePenMarker={() => setCurrentChallenge({
-                ...currentChallenge,
-                penMarkerMode: !currentChallenge.penMarkerMode
-              })}
             />
 
             {isDrawingMode && (

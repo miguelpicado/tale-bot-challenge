@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { COMMAND_TYPES } from '../utils/talebotEngine';
-import { Play, RotateCcw, Trash2, Wand2, PenTool, Pause } from 'lucide-react';
+import { Play, RotateCcw, Trash2, Wand2, Pause } from 'lucide-react';
 
 export default function TaleBotController({
   commands = [],
@@ -9,9 +9,7 @@ export default function TaleBotController({
   onClearCommands,
   onRunSimulation,
   onAutoSolvePath,
-  isPlaying = false,
-  penMarkerActive = false,
-  onTogglePenMarker
+  isPlaying = false
 }) {
   // Silent Global Keyboard Shortcuts Listener
   useEffect(() => {
@@ -53,6 +51,7 @@ export default function TaleBotController({
           onAddCommand(COMMAND_TYPES.LOOP);
           break;
         case ' ':
+        case 'Enter':
           e.preventDefault();
           onRunSimulation();
           break;
@@ -91,10 +90,10 @@ export default function TaleBotController({
         </div>
       </div>
 
-      {/* Hardware Buttons Deck */}
+      {/* Hardware Buttons Deck (3 Columns Wide Layout) */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(4, 1fr)',
+        gridTemplateColumns: 'repeat(3, 1fr)', // 3 Columns wide as requested!
         gap: '0.8rem'
       }}>
         {/* Forward */}
@@ -105,11 +104,11 @@ export default function TaleBotController({
             background: COMMAND_TYPES.FORWARD.color,
             color: COMMAND_TYPES.FORWARD.textColor,
             flexDirection: 'column',
-            padding: '1rem 0.5rem',
+            padding: '1.1rem 0.5rem',
             fontSize: '0.9rem'
           }}
         >
-          <span style={{ fontSize: '1.7rem' }}>⬆️</span>
+          <span style={{ fontSize: '1.8rem' }}>⬆️</span>
           <span>Avanzar</span>
         </button>
 
@@ -121,11 +120,11 @@ export default function TaleBotController({
             background: COMMAND_TYPES.BACKWARD.color,
             color: COMMAND_TYPES.BACKWARD.textColor,
             flexDirection: 'column',
-            padding: '1rem 0.5rem',
+            padding: '1.1rem 0.5rem',
             fontSize: '0.9rem'
           }}
         >
-          <span style={{ fontSize: '1.7rem' }}>⬇️</span>
+          <span style={{ fontSize: '1.8rem' }}>⬇️</span>
           <span>Atrás</span>
         </button>
 
@@ -137,11 +136,11 @@ export default function TaleBotController({
             background: COMMAND_TYPES.TURN_LEFT.color,
             color: COMMAND_TYPES.TURN_LEFT.textColor,
             flexDirection: 'column',
-            padding: '1rem 0.5rem',
+            padding: '1.1rem 0.5rem',
             fontSize: '0.9rem'
           }}
         >
-          <span style={{ fontSize: '1.7rem' }}>↩️</span>
+          <span style={{ fontSize: '1.8rem' }}>↩️</span>
           <span>Girar Izq.</span>
         </button>
 
@@ -153,11 +152,11 @@ export default function TaleBotController({
             background: COMMAND_TYPES.TURN_RIGHT.color,
             color: COMMAND_TYPES.TURN_RIGHT.textColor,
             flexDirection: 'column',
-            padding: '1rem 0.5rem',
+            padding: '1.1rem 0.5rem',
             fontSize: '0.9rem'
           }}
         >
-          <span style={{ fontSize: '1.7rem' }}>↪️</span>
+          <span style={{ fontSize: '1.8rem' }}>↪️</span>
           <span>Girar Der.</span>
         </button>
 
@@ -169,11 +168,11 @@ export default function TaleBotController({
             background: COMMAND_TYPES.DANCE.color,
             color: COMMAND_TYPES.DANCE.textColor,
             flexDirection: 'column',
-            padding: '0.9rem 0.5rem',
+            padding: '1.1rem 0.5rem',
             fontSize: '0.85rem'
           }}
         >
-          <span style={{ fontSize: '1.5rem' }}>💃</span>
+          <span style={{ fontSize: '1.7rem' }}>💃</span>
           <span>Bailar</span>
         </button>
 
@@ -185,11 +184,11 @@ export default function TaleBotController({
             background: COMMAND_TYPES.SOUND.color,
             color: COMMAND_TYPES.SOUND.textColor,
             flexDirection: 'column',
-            padding: '0.9rem 0.5rem',
+            padding: '1.1rem 0.5rem',
             fontSize: '0.85rem'
           }}
         >
-          <span style={{ fontSize: '1.5rem' }}>🔊</span>
+          <span style={{ fontSize: '1.7rem' }}>🔊</span>
           <span>Sonido</span>
         </button>
 
@@ -201,85 +200,79 @@ export default function TaleBotController({
             background: COMMAND_TYPES.LOOP.color,
             color: COMMAND_TYPES.LOOP.textColor,
             flexDirection: 'column',
-            padding: '0.9rem 0.5rem',
+            padding: '1.1rem 0.5rem',
             fontSize: '0.85rem'
           }}
         >
-          <span style={{ fontSize: '1.5rem' }}>🔁</span>
+          <span style={{ fontSize: '1.7rem' }}>🔁</span>
           <span>Bucle</span>
         </button>
 
-        {/* Pen Toggle */}
+        {/* Physical Orange EJECUTAR (RUN) Button */}
         <button
-          onClick={onTogglePenMarker}
+          onClick={onRunSimulation}
           className="tb-btn"
           style={{
-            background: penMarkerActive ? '#14B8A6' : '#94A3B8',
+            background: 'linear-gradient(135deg, #FF6900 0%, #FF9500 100%)',
             color: 'white',
             flexDirection: 'column',
-            padding: '0.9rem 0.5rem',
+            padding: '1.1rem 0.5rem',
+            fontSize: '0.9rem',
+            boxShadow: '0 4px 16px rgba(255, 105, 0, 0.45)'
+          }}
+        >
+          {isPlaying ? <Pause size={26} /> : <Play size={26} />}
+          <span>{isPlaying ? 'Pausar' : 'Ejecutar'}</span>
+        </button>
+
+        {/* Clear All / Borrar Button */}
+        <button
+          onClick={onClearCommands}
+          className="tb-btn"
+          disabled={commands.length === 0}
+          style={{
+            background: '#F8FAFC',
+            color: '#EF4444',
+            border: '2px solid #E2E8F0',
+            flexDirection: 'column',
+            padding: '1.1rem 0.5rem',
             fontSize: '0.85rem'
           }}
         >
-          <PenTool size={24} />
-          <span>{penMarkerActive ? 'Bajar Pen' : 'Subir Pen'}</span>
+          <Trash2 size={24} />
+          <span>Borrar</span>
         </button>
       </div>
 
-      {/* Controller Actions Bottom Bar */}
+      {/* Controller Secondary Actions Bar */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        gap: '0.8rem',
-        flexWrap: 'wrap'
+        gap: '0.8rem'
       }}>
-        <div style={{ display: 'flex', gap: '0.6rem' }}>
-          <button
-            onClick={onRemoveLastCommand}
-            className="tb-btn tb-btn-secondary"
-            disabled={commands.length === 0}
-            style={{ padding: '0.6rem 1rem', fontSize: '0.85rem' }}
-          >
-            <RotateCcw size={16} /> Borrar Último
-          </button>
-
-          <button
-            onClick={onClearCommands}
-            className="tb-btn tb-btn-secondary"
-            disabled={commands.length === 0}
-            style={{ padding: '0.6rem 1rem', fontSize: '0.85rem', color: '#EF4444' }}
-          >
-            <Trash2 size={16} /> Borrar Todo
-          </button>
-
-          <button
-            onClick={onAutoSolvePath}
-            className="tb-btn"
-            style={{
-              background: 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)',
-              color: 'white',
-              padding: '0.6rem 1rem',
-              fontSize: '0.85rem'
-            }}
-          >
-            <Wand2 size={16} /> Auto Resolver
-          </button>
-        </div>
-
-        {/* Run Button */}
         <button
-          onClick={onRunSimulation}
-          className="tb-btn tb-btn-green"
+          onClick={onRemoveLastCommand}
+          className="tb-btn tb-btn-secondary"
           disabled={commands.length === 0}
+          style={{ padding: '0.6rem 1rem', fontSize: '0.85rem', flex: 1, justifyContent: 'center' }}
+        >
+          <RotateCcw size={16} /> Borrar Último Paso
+        </button>
+
+        <button
+          onClick={onAutoSolvePath}
+          className="tb-btn"
           style={{
-            padding: '0.7rem 1.8rem',
-            fontSize: '1.05rem',
-            boxShadow: '0 4px 16px rgba(16, 185, 129, 0.4)'
+            background: 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)',
+            color: 'white',
+            padding: '0.6rem 1rem',
+            fontSize: '0.85rem',
+            flex: 1,
+            justifyContent: 'center'
           }}
         >
-          {isPlaying ? <Pause size={22} /> : <Play size={22} />}
-          <span>{isPlaying ? 'Pausar' : 'Probar Recorrido'}</span>
+          <Wand2 size={16} /> Auto Resolver
         </button>
       </div>
     </div>
