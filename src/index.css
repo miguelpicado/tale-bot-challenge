@@ -120,6 +120,10 @@ h1, h2, h3, h4, .brand-title {
   animation: danceRobot 0.5s ease-in-out infinite !important;
 }
 
+.only-print {
+  display: none !important;
+}
+
 /* Print CSS setup for double-sided A4 */
 @media print {
   body {
@@ -130,6 +134,10 @@ h1, h2, h3, h4, .brand-title {
   
   .no-print {
     display: none !important;
+  }
+
+  .only-print {
+    display: block !important;
   }
 
   .print-page-container {
