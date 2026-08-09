@@ -12,7 +12,7 @@ import GoogleDriveModal from './components/GoogleDriveModal';
 import { PRESET_CHALLENGES } from './utils/presets';
 import { simulatePath, solveNavigationPath, COMMAND_TYPES } from './utils/talebotEngine';
 import { saveChallengesToLocal, loadChallengesFromLocal, getSavedGoogleClientId } from './utils/storage';
-import { Flag, Star, OctagonAlert, RotateCw, Save, Sparkles, Wand2 } from 'lucide-react';
+import { Save, Sparkles, Printer, Wand2 } from 'lucide-react';
 
 export default function App() {
   // Orientation state: 'landscape' (3 rows x 4 cols) or 'portrait' (4 rows x 3 cols)
@@ -37,9 +37,6 @@ export default function App() {
   // Saved challenges array in localStorage
   const [savedChallenges, setSavedChallenges] = useState([]);
 
-  // Active Interactive Map Placement Tool: 'SELECT', 'START', 'TARGET', 'OBSTACLE'
-  const [activeTool, setActiveTool] = useState('SELECT');
-
   // Simulation & Animation playback state
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
@@ -59,7 +56,7 @@ export default function App() {
     }
   }, []);
 
-  // Save custom challenges to LocalStorage when updated
+  // Save custom challenges to LocalStorage
   const handleSaveToLocalLibrary = () => {
     const newChallenge = {
       ...currentChallenge,
@@ -76,7 +73,6 @@ export default function App() {
     const nextOrient = orientation === 'landscape' ? 'portrait' : 'landscape';
     setOrientation(nextOrient);
 
-    // Adjust grid coordinates to stay inside bounds
     const nextRows = nextOrient === 'landscape' ? 3 : 4;
     const nextCols = nextOrient === 'landscape' ? 4 : 3;
 
@@ -105,39 +101,60 @@ export default function App() {
     }));
   };
 
-  // Grid Canvas Cell Click Handler (Based on active painting tool)
-  const handleCellClick = (r, c) => {
-    if (activeTool === 'START') {
-      setCurrentChallenge({
-        ...currentChallenge,
-        start: { r, c, dir: currentChallenge.start.dir || 0 }
-      });
-    } else if (activeTool === 'TARGET') {
-      setCurrentChallenge({
-        ...currentChallenge,
-        target: { r, c }
-      });
-    } else if (activeTool === 'OBSTACLE') {
-      const existingIdx = currentChallenge.obstacles.findIndex(o => o.r === r && o.c === c);
-      let updatedObs = [...currentChallenge.obstacles];
-      if (existingIdx >= 0) {
-        updatedObs.splice(existingIdx, 1);
-      } else {
-        updatedObs.push({ r, c });
-      }
-      setCurrentChallenge({
-        ...currentChallenge,
-        obstacles: updatedObs
-      });
-    }
-  };
-
-  // Rotate Robot Start Facing Angle (0° Up -> 90° Right -> 180° Down -> 270° Left)
-  const handleRotateRobotStart = () => {
-    const nextDir = ((currentChallenge.start.dir || 0) + 1) % 4;
+  // Cell Popover Contextual Action Handlers
+  const handleSetStartPos = (pos) => {
     setCurrentChallenge({
       ...currentChallenge,
-      start: { ...currentChallenge.start, dir: nextDir }
+      start: pos
+    });
+  };
+
+  const handleSetTargetPos = (pos) => {
+    setCurrentChallenge({
+      ...currentChallenge,
+      target: pos
+    });
+  };
+
+  const handleToggleObstacle = (pos) => {
+    const existingIdx = (currentChallenge.obstacles || []).findIndex(o => o.r === pos.r && o.c === pos.c);
+    let updatedObs = [...(currentChallenge.obstacles || [])];
+    if (existingIdx >= 0) {
+      updatedObs.splice(existingIdx, 1);
+    } else {
+      updatedObs.push(pos);
+    }
+    setCurrentChallenge({
+      ...currentChallenge,
+      obstacles: updatedObs
+    });
+  };
+
+  const handleToggleSpecialAction = ({ r, c, type }) => {
+    const existingIdx = (currentChallenge.specialActions || []).findIndex(sa => sa.r === r && sa.c === c);
+    let updatedSA = [...(currentChallenge.specialActions || [])];
+    if (existingIdx >= 0) {
+      if (updatedSA[existingIdx].type === type) {
+        updatedSA.splice(existingIdx, 1);
+      } else {
+        updatedSA[existingIdx].type = type;
+      }
+    } else {
+      updatedSA.push({ r, c, type });
+    }
+    setCurrentChallenge({
+      ...currentChallenge,
+      specialActions: updatedSA
+    });
+  };
+
+  const handleClearCell = (r, c) => {
+    let updatedObs = (currentChallenge.obstacles || []).filter(o => o.r !== r || o.c !== c);
+    let updatedSA = (currentChallenge.specialActions || []).filter(sa => sa.r !== r || sa.c !== c);
+    setCurrentChallenge({
+      ...currentChallenge,
+      obstacles: updatedObs,
+      specialActions: updatedSA
     });
   };
 
@@ -175,7 +192,7 @@ export default function App() {
         ...currentChallenge,
         commands: solvedCmds
       });
-      confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+      confetti({ particleCount: 60, spread: 70, origin: { y: 0.7 } });
     } else {
       alert('No se encontró un camino válido hasta la meta con los obstáculos actuales.');
     }
@@ -205,10 +222,9 @@ export default function App() {
       if (step >= trajectory.length) {
         clearInterval(interval);
         setIsPlaying(false);
-        // Trigger celebration confetti if reached target
         const lastPos = trajectory[trajectory.length - 1];
         if (lastPos.r === currentChallenge.target.r && lastPos.c === currentChallenge.target.c) {
-          confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+          confetti({ particleCount: 120, spread: 80, origin: { y: 0.5 } });
         }
         return;
       }
@@ -217,7 +233,7 @@ export default function App() {
       setCurrentStep(step);
       setActivePenLines(penLines.slice(0, step));
       step++;
-    }, 600);
+    }, 550);
   };
 
   // Apply Generated Challenge from Generator Panel
@@ -234,7 +250,7 @@ export default function App() {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      {/* Navigation Bar Header */}
+      {/* Header */}
       <Header
         orientation={orientation}
         onToggleOrientation={handleToggleOrientation}
@@ -248,86 +264,27 @@ export default function App() {
           start: { r: numRows - 1, c: 0, dir: 0 },
           target: { r: 0, c: numCols - 1 },
           obstacles: [],
+          specialActions: [],
           commands: []
         })}
         hasGoogleDriveConfigured={!!getSavedGoogleClientId()}
       />
 
-      {/* Main App Workspace */}
+      {/* Main Hero Workspace */}
       <main style={{
-        maxWidth: '1400px',
+        maxWidth: '1440px',
         width: '100%',
         margin: '0 auto',
         padding: '1.5rem',
         flex: 1,
         display: 'grid',
-        gridTemplateColumns: 'minmax(340px, 450px) 1fr',
+        gridTemplateColumns: '1fr 380px',
         gap: '1.5rem',
         alignItems: 'start'
       }}>
-        {/* Left Column: Interactive Map Grid Canvas & Controls */}
-        <section style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-          {/* Active Painter Tools Selector */}
-          <div className="tb-card" style={{ padding: '0.8rem 1.2rem' }}>
-            <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#334155', marginBottom: '0.5rem' }}>
-              🎨 Herramienta de Edición del Mapa:
-            </div>
-            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-              <button
-                onClick={() => setActiveTool('SELECT')}
-                className="tb-btn"
-                style={{
-                  padding: '0.4rem 0.8rem',
-                  fontSize: '0.8rem',
-                  background: activeTool === 'SELECT' ? '#00A3FF' : '#F1F5F9',
-                  color: activeTool === 'SELECT' ? 'white' : '#64748B'
-                }}
-              >
-                👁️ Seleccionar
-              </button>
-
-              <button
-                onClick={() => setActiveTool('START')}
-                className="tb-btn"
-                style={{
-                  padding: '0.4rem 0.8rem',
-                  fontSize: '0.8rem',
-                  background: activeTool === 'START' ? '#FFC700' : '#F1F5F9',
-                  color: activeTool === 'START' ? '#0F172A' : '#64748B'
-                }}
-              >
-                <Flag size={14} /> Poner Inicio 🤖
-              </button>
-
-              <button
-                onClick={() => setActiveTool('TARGET')}
-                className="tb-btn"
-                style={{
-                  padding: '0.4rem 0.8rem',
-                  fontSize: '0.8rem',
-                  background: activeTool === 'TARGET' ? '#10B981' : '#F1F5F9',
-                  color: activeTool === 'TARGET' ? 'white' : '#64748B'
-                }}
-              >
-                <Star size={14} /> Poner Meta ⭐️
-              </button>
-
-              <button
-                onClick={() => setActiveTool('OBSTACLE')}
-                className="tb-btn"
-                style={{
-                  padding: '0.4rem 0.8rem',
-                  fontSize: '0.8rem',
-                  background: activeTool === 'OBSTACLE' ? '#F43F5E' : '#F1F5F9',
-                  color: activeTool === 'OBSTACLE' ? 'white' : '#64748B'
-                }}
-              >
-                <OctagonAlert size={14} /> Obstáculo 🛑
-              </button>
-            </div>
-          </div>
-
-          {/* Grid Canvas Map */}
+        {/* Central Hero Column: Prominent Grid Map & Controller Dock */}
+        <section style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', alignItems: 'center' }}>
+          {/* Prominent Hero Grid Map Canvas */}
           <GridCanvas
             numRows={numRows}
             numCols={numCols}
@@ -335,34 +292,17 @@ export default function App() {
             startPos={currentChallenge.start}
             targetPos={currentChallenge.target}
             obstacles={currentChallenge.obstacles || []}
+            specialActions={currentChallenge.specialActions || []}
             currentRobotState={robotSimState}
             penLines={activePenLines}
-            activeTool={activeTool}
-            onCellClick={handleCellClick}
-            onRotateRobotStart={handleRotateRobotStart}
+            onSetStartPos={handleSetStartPos}
+            onSetTargetPos={handleSetTargetPos}
+            onToggleObstacle={handleToggleObstacle}
+            onToggleSpecialAction={handleToggleSpecialAction}
+            onClearCell={handleClearCell}
           />
 
-          {/* Challenge Details Editor */}
-          <ChallengeEditor
-            challenge={currentChallenge}
-            onChangeChallenge={setCurrentChallenge}
-            onAssignToSlot={setActiveSlot}
-            currentSlot={activeSlot}
-          />
-
-          {/* Save to Local Library Button */}
-          <button
-            onClick={handleSaveToLocalLibrary}
-            className="tb-btn tb-btn-purple"
-            style={{ width: '100%', justifyContent: 'center', padding: '0.75rem' }}
-          >
-            <Save size={18} /> Guardar este Reto en Mi Biblioteca
-          </button>
-        </section>
-
-        {/* Right Column: TaleBot Controller & Generator Panels */}
-        <section style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-          {/* Virtual TaleBot Hardware Controller */}
+          {/* Physical Controller Docked Directly Below Map */}
           <TaleBotController
             commands={currentChallenge.commands || []}
             onAddCommand={handleAddCommand}
@@ -378,6 +318,17 @@ export default function App() {
               penMarkerMode: !currentChallenge.penMarkerMode
             })}
           />
+        </section>
+
+        {/* Right Sidebar: Challenge Details, Generator, & Save */}
+        <aside style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+          {/* Challenge Details Editor & A4 Sheet Slot Assign */}
+          <ChallengeEditor
+            challenge={currentChallenge}
+            onChangeChallenge={setCurrentChallenge}
+            onAssignToSlot={setActiveSlot}
+            currentSlot={activeSlot}
+          />
 
           {/* Automatic Challenge Generator */}
           <GeneratorPanel
@@ -385,7 +336,16 @@ export default function App() {
             numCols={numCols}
             onApplyGeneratedChallenge={handleApplyGeneratedChallenge}
           />
-        </section>
+
+          {/* Save to Local Library Button */}
+          <button
+            onClick={handleSaveToLocalLibrary}
+            className="tb-btn tb-btn-purple"
+            style={{ width: '100%', justifyContent: 'center', padding: '0.75rem' }}
+          >
+            <Save size={18} /> Guardar Reto en Mi Biblioteca
+          </button>
+        </aside>
       </main>
 
       {/* Modals & Overlays */}

@@ -10,14 +10,15 @@ export const DIRECTIONS = [
 ];
 
 export const COMMAND_TYPES = {
-  FORWARD: { id: 'FORWARD', name: 'Avanzar', color: '#FFB703', textColor: '#000000', icon: '⬆️', ledColor: '#FFD166' },
-  BACKWARD: { id: 'BACKWARD', name: 'Retroceder', color: '#0284C7', textColor: '#FFFFFF', icon: '⬇️', ledColor: '#38BDF8' },
-  TURN_LEFT: { id: 'TURN_LEFT', name: 'Girar Izquierda', color: '#10B981', textColor: '#FFFFFF', icon: '↩️', ledColor: '#34D399' },
-  TURN_RIGHT: { id: 'TURN_RIGHT', name: 'Girar Derecha', color: '#F43F5E', textColor: '#FFFFFF', icon: '↪️', ledColor: '#FB7185' },
-  DANCE: { id: 'DANCE', name: 'Bailar', color: '#8B5CF6', textColor: '#FFFFFF', icon: '💃', ledColor: '#A78BFA' },
-  SOUND: { id: 'SOUND', name: 'Reproducir Sonido', color: '#EC4899', textColor: '#FFFFFF', icon: '🔊', ledColor: '#F472B6' },
-  PEN_DOWN: { id: 'PEN_DOWN', name: 'Bajar Rotulador', color: '#F97316', textColor: '#FFFFFF', icon: '🖊️', ledColor: '#FB923C' },
-  PEN_UP: { id: 'PEN_UP', name: 'Subir Rotulador', color: '#64748B', textColor: '#FFFFFF', icon: '✍️', ledColor: '#94A3B8' },
+  FORWARD: { id: 'FORWARD', name: 'Avanzar', color: '#FFB703', textColor: '#000000', icon: '⬆️', ledColor: '#FFD166', key: '↑' },
+  BACKWARD: { id: 'BACKWARD', name: 'Retroceder', color: '#0284C7', textColor: '#FFFFFF', icon: '⬇️', ledColor: '#38BDF8', key: '↓' },
+  TURN_LEFT: { id: 'TURN_LEFT', name: 'Girar Izquierda', color: '#10B981', textColor: '#FFFFFF', icon: '↩️', ledColor: '#34D399', key: '←' },
+  TURN_RIGHT: { id: 'TURN_RIGHT', name: 'Girar Derecha', color: '#F43F5E', textColor: '#FFFFFF', icon: '↪️', ledColor: '#FB7185', key: '→' },
+  DANCE: { id: 'DANCE', name: 'Bailar', color: '#8B5CF6', textColor: '#FFFFFF', icon: '💃', ledColor: '#A78BFA', key: 'B' },
+  SOUND: { id: 'SOUND', name: 'Sonido / Micro', color: '#EC4899', textColor: '#FFFFFF', icon: '🔊', ledColor: '#F472B6', key: 'M' },
+  LOOP: { id: 'LOOP', name: 'Bucle (Repetir)', color: '#FF6900', textColor: '#FFFFFF', icon: '🔁', ledColor: '#FF9500', key: 'L' },
+  PEN_DOWN: { id: 'PEN_DOWN', name: 'Bajar Rotulador', color: '#14B8A6', textColor: '#FFFFFF', icon: '🖊️', ledColor: '#2DD4BF', key: 'P' },
+  PEN_UP: { id: 'PEN_UP', name: 'Subir Rotulador', color: '#64748B', textColor: '#FFFFFF', icon: '✍️', ledColor: '#94A3B8', key: 'U' },
 };
 
 // Map cell coordinates label format (A1, A2... B1, B2...)
@@ -26,7 +27,6 @@ export function getCellLabel(row, col) {
   return `${rowLetters[row] || row + 1}${col + 1}`;
 }
 
-// Convert direction index (0..3) after turning
 export function turnLeftDir(dir) {
   return (dir + 3) % 4;
 }
@@ -35,17 +35,38 @@ export function turnRightDir(dir) {
   return (dir + 1) % 4;
 }
 
+// Expand command list handling LOOP commands
+export function expandLoopCommands(rawCommands) {
+  const expanded = [];
+  const historyBeforeLoop = [];
+
+  for (let i = 0; i < rawCommands.length; i++) {
+    const cmd = rawCommands[i];
+    if (cmd.id === 'LOOP') {
+      // Repeat the block of commands preceding the LOOP command
+      expanded.push(...historyBeforeLoop);
+    } else {
+      expanded.push(cmd);
+      historyBeforeLoop.push(cmd);
+    }
+  }
+
+  return expanded;
+}
+
 // Execute commands and compute complete trajectory
-export function simulatePath(start, commands, numRows = 3, numCols = 4) {
+export function simulatePath(start, rawCommands, numRows = 3, numCols = 4) {
+  const commands = expandLoopCommands(rawCommands);
+
   let currR = start.r;
   let currC = start.c;
-  let currDir = start.dir || 0; // 0: Up, 1: Right, 2: Down, 3: Left
+  let currDir = start.dir || 0;
   let isPenDown = start.penDown || false;
 
   const trajectory = [{ r: currR, c: currC, dir: currDir, penDown: isPenDown, step: 0 }];
   const visitedCells = new Set([`${currR},${currC}`]);
-  const penLines = []; // [{ from: {r, c}, to: {r, c}, color }]
-  const events = []; // Special actions like dance/sound
+  const penLines = [];
+  const events = [];
   let isOutOfBounds = false;
 
   commands.forEach((cmd, idx) => {
@@ -135,7 +156,8 @@ export function simulatePath(start, commands, numRows = 3, numCols = 4) {
     penLines,
     events,
     endPosition: { r: currR, c: currC, dir: currDir },
-    isOutOfBounds
+    isOutOfBounds,
+    expandedCommands: commands
   };
 }
 
@@ -201,11 +223,24 @@ export function solveNavigationPath(start, end, obstacles = [], numRows = 3, num
     }
   }
 
-  return null; // No path found
+  return null;
 }
 
-// Drawing shapes preset path templates
+// Drawing shapes presets
 export const SHAPE_PRESETS = [
+  {
+    id: 'cuadrado_loop',
+    name: 'Cuadrado con Bucle 🔁',
+    description: 'Dibuja un cuadrado usando el botón Bucle (Avanzar + Girar Der x4)',
+    start: { r: 2, c: 0, dir: 0 },
+    commands: [
+      COMMAND_TYPES.PEN_DOWN,
+      COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD,
+      COMMAND_TYPES.TURN_RIGHT,
+      COMMAND_TYPES.LOOP, // Repeats the 2 forward + turn right block!
+      COMMAND_TYPES.DANCE
+    ]
+  },
   {
     id: 'cuadrado',
     name: 'Cuadrado 🔲',
@@ -220,23 +255,6 @@ export const SHAPE_PRESETS = [
       COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD,
       COMMAND_TYPES.TURN_RIGHT,
       COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD,
-      COMMAND_TYPES.DANCE
-    ]
-  },
-  {
-    id: 'rectangulo',
-    name: 'Rectángulo █',
-    description: 'Recorrido rectangular (3x1 casillas)',
-    start: { r: 2, c: 0, dir: 1 },
-    commands: [
-      COMMAND_TYPES.PEN_DOWN,
-      COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD,
-      COMMAND_TYPES.TURN_LEFT,
-      COMMAND_TYPES.FORWARD,
-      COMMAND_TYPES.TURN_LEFT,
-      COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD,
-      COMMAND_TYPES.TURN_LEFT,
-      COMMAND_TYPES.FORWARD,
       COMMAND_TYPES.DANCE
     ]
   },
@@ -269,23 +287,8 @@ export const SHAPE_PRESETS = [
     ]
   },
   {
-    id: 'letra_U',
-    name: 'Letra U 🇺',
-    description: 'Dibuja el contorno de la letra U',
-    start: { r: 0, c: 0, dir: 2 },
-    commands: [
-      COMMAND_TYPES.PEN_DOWN,
-      COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD,
-      COMMAND_TYPES.TURN_LEFT,
-      COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD,
-      COMMAND_TYPES.TURN_LEFT,
-      COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD,
-      COMMAND_TYPES.DANCE
-    ]
-  },
-  {
     id: 'letra_O',
-    name: 'Letra O / Cero ⭕',
+    name: 'Letra O ⭕',
     description: 'Dibuja un círculo/cuadrado cerrado O',
     start: { r: 1, c: 1, dir: 0 },
     commands: [
@@ -304,25 +307,6 @@ export const SHAPE_PRESETS = [
     id: 'zigzag',
     name: 'Zig-Zag ⚡',
     description: 'Patrón serpenteante en zig-zag',
-    start: { r: 2, c: 0, dir: 0 },
-    commands: [
-      COMMAND_TYPES.PEN_DOWN,
-      COMMAND_TYPES.FORWARD,
-      COMMAND_TYPES.TURN_RIGHT,
-      COMMAND_TYPES.FORWARD,
-      COMMAND_TYPES.TURN_LEFT,
-      COMMAND_TYPES.FORWARD,
-      COMMAND_TYPES.TURN_RIGHT,
-      COMMAND_TYPES.FORWARD,
-      COMMAND_TYPES.TURN_LEFT,
-      COMMAND_TYPES.FORWARD,
-      COMMAND_TYPES.DANCE
-    ]
-  },
-  {
-    id: 'escalera',
-    name: 'Escalera 🪜',
-    description: 'Trazado simétrico de escalones',
     start: { r: 2, c: 0, dir: 0 },
     commands: [
       COMMAND_TYPES.PEN_DOWN,
