@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
 import { getCellLabel, COMMAND_TYPES, DIRECTIONS, OBSTACLE_TYPES, simulatePath } from '../utils/talebotEngine';
 import { MAP_THEMES } from '../utils/presets';
-import { Printer, X, Scissors, Check } from 'lucide-react';
+import { Printer, X, Scissors } from 'lucide-react';
 
 export default function PrintSheetPreview({
   challenge1,
   challenge2,
   onClose
 }) {
-  // Option to include Page 3 (Cut-out obstacles sheet) - defaults to false as requested!
   const [includeCutoutSheet, setIncludeCutoutSheet] = useState(false);
 
   const handlePrint = () => {
@@ -22,8 +21,7 @@ export default function PrintSheetPreview({
     const numCols = ch.numCols || 4;
     const obstacleMap = new Map((ch.obstacles || []).map(o => [`${o.r},${o.c}`, o.type || 'ALTO']));
 
-    // Pre-calculate trajectory for path stroke rendering
-    const { penLines, trajectory } = simulatePath(
+    const { penLines } = simulatePath(
       ch.start || { r: 2, c: 0, dir: 0 },
       ch.commands || [],
       numRows,
@@ -32,61 +30,61 @@ export default function PrintSheetPreview({
 
     return (
       <div style={{
-        border: '3px solid #FF6900',
-        borderRadius: '18px',
-        padding: '1rem',
+        border: '2.5px solid #FF6900',
+        borderRadius: '14px',
+        padding: '0.75rem',
         background: '#FFFFFF',
         display: 'flex',
         flexDirection: 'column',
-        gap: '0.8rem',
+        gap: '0.5rem',
         boxSizing: 'border-box',
         height: '48%'
       }}>
-        {/* Challenge Header */}
+        {/* Header */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          borderBottom: '2px solid #E2E8F0',
-          paddingBottom: '0.4rem'
+          borderBottom: '1.5px solid #E2E8F0',
+          paddingBottom: '0.3rem'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <span style={{
               background: '#FF6900',
               color: 'white',
               fontFamily: 'Fredoka',
               fontWeight: 700,
-              padding: '2px 10px',
-              borderRadius: '10px',
-              fontSize: '0.9rem'
+              padding: '1px 8px',
+              borderRadius: '8px',
+              fontSize: '0.78rem'
             }}>
               RETO #{index}
             </span>
-            <h3 style={{ fontFamily: 'Fredoka', fontSize: '1.2rem', color: '#0F172A' }}>
-              {ch.title || `Reto de programación ${index}`}
-            </h3>
+            <h4 style={{ fontFamily: 'Fredoka', fontSize: '0.95rem', color: '#0F172A' }}>
+              {ch.title || `Reto ${index}`}
+            </h4>
           </div>
 
-          <div style={{ display: 'flex', gap: '2px', fontSize: '1rem' }}>
+          <div style={{ display: 'flex', gap: '1px', fontSize: '0.85rem' }}>
             {Array.from({ length: ch.difficulty || 1 }).map((_, i) => (
               <span key={i}>⭐️</span>
             ))}
           </div>
         </div>
 
-        {/* Story prompt */}
+        {/* Story */}
         {ch.story && (
-          <p style={{ fontSize: '0.85rem', color: '#475569', fontWeight: 600, fontStyle: 'italic' }}>
+          <p style={{ fontSize: '0.72rem', color: '#475569', fontWeight: 600, fontStyle: 'italic', lineHeight: 1.2 }}>
             💡 {ch.story}
           </p>
         )}
 
-        {/* Prominent Clean Map Grid with Path Line Overlay */}
+        {/* Grid Map with Path Stroke */}
         <div style={{
           background: theme.bgGradient,
-          padding: '0.6rem',
-          borderRadius: '16px',
-          border: '2.5px solid #94A3B8',
+          padding: '0.4rem',
+          borderRadius: '12px',
+          border: '2px solid #94A3B8',
           width: '100%',
           flex: 1,
           position: 'relative',
@@ -98,12 +96,12 @@ export default function PrintSheetPreview({
             display: 'grid',
             gridTemplateRows: `repeat(${numRows}, 1fr)`,
             gridTemplateColumns: `repeat(${numCols}, 1fr)`,
-            gap: '6px',
+            gap: '4px',
             width: '100%',
             height: '100%',
             position: 'relative'
           }}>
-            {/* SVG Path Stroke Layer */}
+            {/* SVG Path Layer */}
             {penLines && penLines.length > 0 && (
               <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 15 }}>
                 {penLines.map((line, idx) => {
@@ -114,7 +112,7 @@ export default function PrintSheetPreview({
                   const x2 = (line.to.c + 0.5) * cellW;
                   const y2 = (line.to.r + 0.5) * cellH;
                   return (
-                    <line key={idx} x1={`${x1}%`} y1={`${y1}%`} x2={`${x2}%`} y2={`${y2}%`} stroke="#FF0055" strokeWidth="6" strokeLinecap="round" />
+                    <line key={idx} x1={`${x1}%`} y1={`${y1}%`} x2={`${x2}%`} y2={`${y2}%`} stroke="#FF0055" strokeWidth="5" strokeLinecap="round" />
                   );
                 })}
               </svg>
@@ -133,20 +131,20 @@ export default function PrintSheetPreview({
                     key={cellKey}
                     style={{
                       background: obsObj ? '#FFE4E6' : '#FFFFFF',
-                      border: '1.5px dashed #CBD5E1',
-                      borderRadius: '10px',
+                      border: '1px dashed #CBD5E1',
+                      borderRadius: '8px',
                       position: 'relative',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      fontSize: '1.6rem'
+                      fontSize: '1.2rem'
                     }}
                   >
                     <span style={{
                       position: 'absolute',
-                      top: '3px',
-                      left: '5px',
-                      fontSize: '0.65rem',
+                      top: '2px',
+                      left: '4px',
+                      fontSize: '0.5rem',
                       fontWeight: 800,
                       color: '#64748B'
                     }}>
@@ -156,7 +154,7 @@ export default function PrintSheetPreview({
                     {isStart && (
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1 }}>
                         <span>🤖</span>
-                        <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#00A3FF' }}>
+                        <span style={{ fontSize: '0.55rem', fontWeight: 800, color: '#00A3FF' }}>
                           {DIRECTIONS[ch.start.dir || 0].arrow}
                         </span>
                       </div>
@@ -179,13 +177,13 @@ export default function PrintSheetPreview({
 
     return (
       <div style={{
-        border: '3px dashed #10B981',
-        borderRadius: '18px',
-        padding: '1rem',
+        border: '2.5px dashed #10B981',
+        borderRadius: '14px',
+        padding: '0.75rem',
         background: '#F0FDF4',
         display: 'flex',
         flexDirection: 'column',
-        gap: '0.8rem',
+        gap: '0.6rem',
         boxSizing: 'border-box',
         height: '48%'
       }}>
@@ -193,32 +191,32 @@ export default function PrintSheetPreview({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          borderBottom: '2px solid #BBF7D0',
-          paddingBottom: '0.4rem'
+          borderBottom: '1.5px solid #BBF7D0',
+          paddingBottom: '0.3rem'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <span style={{
               background: '#10B981',
               color: 'white',
               fontFamily: 'Fredoka',
               fontWeight: 700,
-              padding: '2px 10px',
-              borderRadius: '10px',
-              fontSize: '0.9rem'
+              padding: '1px 8px',
+              borderRadius: '8px',
+              fontSize: '0.78rem'
             }}>
               SOLUCIÓN #{index}
             </span>
-            <h3 style={{ fontFamily: 'Fredoka', fontSize: '1.2rem', color: '#065F46' }}>
+            <h4 style={{ fontFamily: 'Fredoka', fontSize: '0.95rem', color: '#065F46' }}>
               {ch.title || `Solución Reto ${index}`}
-            </h3>
+            </h4>
           </div>
         </div>
 
         <div>
-          <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#065F46', display: 'block', marginBottom: '6px' }}>
+          <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#065F46', display: 'block', marginBottom: '4px' }}>
             ✅ Secuencia correcta de botones TaleBot Pro:
           </span>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
             {(ch.commands || []).map((cmd, i) => {
               const cmdInfo = COMMAND_TYPES[cmd.id] || COMMAND_TYPES.FORWARD;
               return (
@@ -227,14 +225,13 @@ export default function PrintSheetPreview({
                   style={{
                     background: cmdInfo.color,
                     color: cmdInfo.textColor,
-                    padding: '0.35rem 0.6rem',
-                    borderRadius: '10px',
+                    padding: '0.25rem 0.45rem',
+                    borderRadius: '8px',
                     fontWeight: 800,
-                    fontSize: '0.75rem',
+                    fontSize: '0.68rem',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '4px',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                    gap: '3px'
                   }}
                 >
                   <span style={{ opacity: 0.8 }}>{i + 1}.</span>
@@ -262,44 +259,42 @@ export default function PrintSheetPreview({
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      padding: '1.5rem',
-      overflowY: 'auto'
+      padding: '1rem',
+      overflow: 'hidden' // NO VERTICAL SCROLLBAR ON SCREEN
     }}>
       {/* Floating Header Control Bar */}
       <div className="no-print" style={{
         background: '#FFFFFF',
-        padding: '0.8rem 1.6rem',
-        borderRadius: '20px',
-        boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
+        padding: '0.6rem 1.4rem',
+        borderRadius: '16px',
+        boxShadow: '0 8px 20px rgba(0,0,0,0.15)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         width: '100%',
-        maxWidth: '880px',
-        marginBottom: '1.5rem',
-        flexWrap: 'wrap',
+        maxWidth: '960px',
+        marginBottom: '0.8rem',
         gap: '0.8rem'
       }}>
         <div>
-          <h3 style={{ fontFamily: 'Fredoka', color: '#0F172A', fontSize: '1.2rem' }}>
-            🖨️ Fichas de Recorrido A4
+          <h3 style={{ fontFamily: 'Fredoka', color: '#0F172A', fontSize: '1.1rem' }}>
+            🖨️ Fichas de Recorrido A4 (Vista Compacta Lado a Lado)
           </h3>
-          <p style={{ fontSize: '0.8rem', color: '#64748B', fontWeight: 600 }}>
-            Página 1: Mapa pintado | Página 2: Solución al reverso
+          <p style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 600 }}>
+            Página 1: Frente (Ejercicios) | Página 2: Reverso (Soluciones)
           </p>
         </div>
 
-        {/* Option Checkbox to include Cut-out Obstacles Sheet */}
         <label style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '0.5rem',
+          gap: '0.4rem',
           background: '#FFF7ED',
           border: '1.5px solid #FFEDD5',
-          padding: '0.4rem 0.8rem',
-          borderRadius: '12px',
+          padding: '0.35rem 0.7rem',
+          borderRadius: '10px',
           cursor: 'pointer',
-          fontSize: '0.8rem',
+          fontSize: '0.75rem',
           fontWeight: 700,
           color: '#C2410C'
         }}>
@@ -307,43 +302,44 @@ export default function PrintSheetPreview({
             type="checkbox"
             checked={includeCutoutSheet}
             onChange={(e) => setIncludeCutoutSheet(e.target.checked)}
-            style={{ accentColor: '#FF6900', width: '16px', height: '16px' }}
+            style={{ accentColor: '#FF6900', width: '14px', height: '14px' }}
           />
-          <span>Imprimir Hoja de 12 Obstáculos Recortables (Pág 3)</span>
+          <span>Imprimir 12 Obstáculos Recortables (Pág 3)</span>
         </label>
 
-        <div style={{ display: 'flex', gap: '0.8rem' }}>
-          <button onClick={handlePrint} className="tb-btn tb-btn-yellow">
-            <Printer size={20} /> Imprimir A4
+        <div style={{ display: 'flex', gap: '0.6rem' }}>
+          <button onClick={handlePrint} className="tb-btn tb-btn-yellow" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
+            <Printer size={18} /> Imprimir A4
           </button>
 
-          <button onClick={onClose} className="tb-btn tb-btn-secondary">
-            <X size={20} /> Cerrar
+          <button onClick={onClose} className="tb-btn tb-btn-secondary" style={{ padding: '0.5rem 0.8rem', fontSize: '0.85rem' }}>
+            <X size={18} /> Cerrar
           </button>
         </div>
       </div>
 
-      {/* Printable Sheet Pages - Side by Side Layout (Lado a lado) */}
+      {/* Printable Sheet Pages - Scaled Compact Side-by-Side Viewport */}
       <div 
         className="print-page-container"
         style={{
           display: 'flex',
           flexDirection: 'row',
-          gap: '2rem',
+          gap: '1.5rem',
           justifyContent: 'center',
-          alignItems: 'flex-start',
+          alignItems: 'center',
           maxWidth: '100%',
-          overflowX: 'auto',
-          paddingBottom: '1rem'
+          flex: 1,
+          maxHeight: 'calc(100vh - 100px)'
         }}
       >
-        {/* PAGE 1 (Worksheet Front - Map with painted path) */}
+        {/* PAGE 1 (Front Side - Worksheets) */}
         <div className="print-page" style={{
-          width: '210mm',
-          height: '297mm',
+          width: '320px',
+          height: '450px',
           background: 'white',
-          borderRadius: '16px',
-          padding: '15mm',
+          borderRadius: '14px',
+          boxShadow: '0 12px 30px rgba(0,0,0,0.2)',
+          padding: '12px',
           boxSizing: 'border-box',
           display: 'flex',
           flexDirection: 'column',
@@ -353,13 +349,13 @@ export default function PrintSheetPreview({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            borderBottom: '3px solid #FF6900',
-            paddingBottom: '0.5rem'
+            borderBottom: '2.5px solid #FF6900',
+            paddingBottom: '0.3rem'
           }}>
-            <h2 style={{ fontFamily: 'Fredoka', color: '#0F172A', fontSize: '1.4rem' }}>
-              🤖 TaleBot Pro - Fichas de Recorrido
-            </h2>
-            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748B' }}>Página 1 / {includeCutoutSheet ? '3' : '2'}</span>
+            <h3 style={{ fontFamily: 'Fredoka', color: '#0F172A', fontSize: '1rem' }}>
+              🤖 TaleBot Pro - Fichas A4
+            </h3>
+            <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#64748B' }}>Pág 1 / {includeCutoutSheet ? '3' : '2'}</span>
           </div>
 
           {renderSingleChallengeFront(challenge1, 1)}
@@ -368,11 +364,12 @@ export default function PrintSheetPreview({
 
         {/* PAGE 2 (Back Side - Solutions) */}
         <div className="print-page" style={{
-          width: '210mm',
-          height: '297mm',
+          width: '320px',
+          height: '450px',
           background: 'white',
-          borderRadius: '16px',
-          padding: '15mm',
+          borderRadius: '14px',
+          boxShadow: '0 12px 30px rgba(0,0,0,0.2)',
+          padding: '12px',
           boxSizing: 'border-box',
           display: 'flex',
           flexDirection: 'column',
@@ -382,27 +379,28 @@ export default function PrintSheetPreview({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            borderBottom: '3px solid #10B981',
-            paddingBottom: '0.5rem'
+            borderBottom: '2.5px solid #10B981',
+            paddingBottom: '0.3rem'
           }}>
-            <h2 style={{ fontFamily: 'Fredoka', color: '#065F46', fontSize: '1.4rem' }}>
-              🔑 Soluciones de las Fichas (Reverso)
-            </h2>
-            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748B' }}>Página 2 / {includeCutoutSheet ? '3' : '2'}</span>
+            <h3 style={{ fontFamily: 'Fredoka', color: '#065F46', fontSize: '1rem' }}>
+              🔑 Soluciones (Reverso)
+            </h3>
+            <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#64748B' }}>Pág 2 / {includeCutoutSheet ? '3' : '2'}</span>
           </div>
 
           {renderSingleChallengeBack(challenge1, 1)}
           {renderSingleChallengeBack(challenge2, 2)}
         </div>
 
-        {/* PAGE 3 (Optional Printable 12 Cut-out Obstacles Sheet) */}
+        {/* PAGE 3 (Optional Cut-out Obstacles Sheet) */}
         {includeCutoutSheet && (
           <div className="print-page" style={{
-            width: '210mm',
-            height: '297mm',
+            width: '320px',
+            height: '450px',
             background: 'white',
-            borderRadius: '16px',
-            padding: '15mm',
+            borderRadius: '14px',
+            boxShadow: '0 12px 30px rgba(0,0,0,0.2)',
+            padding: '12px',
             boxSizing: 'border-box',
             display: 'flex',
             flexDirection: 'column',
@@ -412,55 +410,44 @@ export default function PrintSheetPreview({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              borderBottom: '3px solid #8B5CF6',
-              paddingBottom: '0.5rem'
+              borderBottom: '2.5px solid #8B5CF6',
+              paddingBottom: '0.3rem'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Scissors size={24} color="#8B5CF6" />
-                <h2 style={{ fontFamily: 'Fredoka', color: '#0F172A', fontSize: '1.4rem' }}>
-                  ✂️ Obstáculos Recortables para el Mapa Físico
-                </h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <Scissors size={18} color="#8B5CF6" />
+                <h3 style={{ fontFamily: 'Fredoka', color: '#0F172A', fontSize: '1rem' }}>
+                  ✂️ Obstáculos Recortables
+                </h3>
               </div>
-              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748B' }}>Página 3 / 3</span>
+              <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#64748B' }}>Pág 3 / 3</span>
             </div>
-
-            <p style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 600 }}>
-              Imprime esta hoja en papel o cartulina y recorta las fichas por la línea de puntos para colocarlas sobre el tablero 3x4 del robot TaleBot Pro.
-            </p>
 
             <div style={{
               display: 'grid',
               gridTemplateRows: 'repeat(4, 1fr)',
               gridTemplateColumns: 'repeat(3, 1fr)',
-              gap: '12px',
+              gap: '6px',
               flex: 1,
-              margin: '0.5rem 0'
+              margin: '0.4rem 0'
             }}>
               {OBSTACLE_TYPES.map((obs) => (
                 <div
                   key={obs.id}
                   style={{
-                    border: '2px dashed #94A3B8',
-                    borderRadius: '16px',
-                    padding: '0.8rem',
+                    border: '1.5px dashed #94A3B8',
+                    borderRadius: '10px',
+                    padding: '0.3rem',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
                     textAlign: 'center',
-                    background: '#F8FAFC',
-                    position: 'relative'
+                    background: '#F8FAFC'
                   }}
                 >
-                  <span style={{ position: 'absolute', top: '4px', right: '6px', fontSize: '0.65rem', color: '#94A3B8' }}>
-                    ✂️
-                  </span>
-                  <div style={{ fontSize: '2.8rem' }}>{obs.icon}</div>
-                  <div style={{ fontFamily: 'Fredoka', fontWeight: 700, fontSize: '0.95rem', color: '#0F172A', marginTop: '4px' }}>
+                  <div style={{ fontSize: '1.4rem' }}>{obs.icon}</div>
+                  <div style={{ fontFamily: 'Fredoka', fontWeight: 700, fontSize: '0.68rem', color: '#0F172A' }}>
                     {obs.name}
-                  </div>
-                  <div style={{ fontSize: '0.68rem', color: '#64748B', marginTop: '2px', lineHeight: 1.2 }}>
-                    {obs.description}
                   </div>
                 </div>
               ))}

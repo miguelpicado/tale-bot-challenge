@@ -14,7 +14,7 @@ import ShapeCatalogDrawer from './components/ShapeCatalogDrawer';
 import { PRESET_CHALLENGES } from './utils/presets';
 import { simulatePath, solveNavigationPath, COMMAND_TYPES } from './utils/talebotEngine';
 import { saveChallengesToLocal, loadChallengesFromLocal, getSavedGoogleClientId } from './utils/storage';
-import { Feather, Shield, Sparkles } from 'lucide-react';
+import { Save } from 'lucide-react';
 
 export default function App() {
   // Orientation: 'landscape' (3x4) or 'portrait' (4x3)
@@ -41,10 +41,6 @@ export default function App() {
 
   // Saved challenges in LocalStorage
   const [savedChallenges, setSavedChallenges] = useState([]);
-
-  // Accessories: Wings & Arms
-  const [hasWings, setHasWings] = useState(false);
-  const [hasArms, setHasArms] = useState(false);
 
   // Live simulation playback
   const [isPlaying, setIsPlaying] = useState(false);
@@ -110,7 +106,7 @@ export default function App() {
     }));
   };
 
-  // Cell popover action handlers
+  // Popover cell action handlers
   const handleSetStartPos = (pos) => {
     setCurrentChallenge({ ...currentChallenge, start: pos });
   };
@@ -212,17 +208,14 @@ export default function App() {
     }, 550);
   };
 
-  const handleSelectChallengeMode = (modeData) => {
-    setActiveModeName(modeData.modeName);
-    setIsDrawingMode(modeData.isDrawingMode || false);
-    setCurrentChallenge({
-      ...currentChallenge,
-      ...modeData,
-      numRows,
-      numCols
-    });
-    setRobotSimState(null);
-    setActivePenLines([]);
+  // Autogenerate A4 Pages from NewChallengeModal
+  const handleGenerateA4Pages = (generatedList) => {
+    if (generatedList.length >= 2) {
+      setChallenge1(generatedList[0]);
+      setChallenge2(generatedList[1]);
+      setActiveModeName(`Fichas Autogeneradas (${generatedList.length} Retos)`);
+      setShowPrintPreview(true);
+    }
   };
 
   const handleSelectShapeFromDrawer = (shape) => {
@@ -273,8 +266,6 @@ export default function App() {
             obstacles={currentChallenge.obstacles || []}
             currentRobotState={robotSimState}
             penLines={activePenLines}
-            hasWings={hasWings}
-            hasArms={hasArms}
             onSetStartPos={handleSetStartPos}
             onSetTargetPos={handleSetTargetPos}
             onToggleObstacle={handleToggleObstacle}
@@ -284,44 +275,6 @@ export default function App() {
 
         {/* Right Sidebar: TaleBot Controller, Shape Drawer (If active), & Details */}
         <aside style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-          {/* Accessories Control Box */}
-          <div className="tb-card" style={{ padding: '0.8rem 1.2rem' }}>
-            <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#334155', display: 'block', marginBottom: '0.5rem' }}>
-              🦾 Accesorios Físicos de TaleBot Pro:
-            </span>
-            <div style={{ display: 'flex', gap: '0.6rem' }}>
-              <button
-                onClick={() => setHasWings(!hasWings)}
-                className="tb-btn"
-                style={{
-                  flex: 1,
-                  padding: '0.5rem',
-                  fontSize: '0.8rem',
-                  background: hasWings ? '#38BDF8' : '#F1F5F9',
-                  color: hasWings ? 'white' : '#64748B',
-                  justifyContent: 'center'
-                }}
-              >
-                🪽 {hasWings ? 'Alas Puestas' : 'Poner Alas'}
-              </button>
-
-              <button
-                onClick={() => setHasArms(!hasArms)}
-                className="tb-btn"
-                style={{
-                  flex: 1,
-                  padding: '0.5rem',
-                  fontSize: '0.8rem',
-                  background: hasArms ? '#F97316' : '#F1F5F9',
-                  color: hasArms ? 'white' : '#64748B',
-                  justifyContent: 'center'
-                }}
-              >
-                🦾 {hasArms ? 'Brazos Puestos' : 'Poner Brazos'}
-              </button>
-            </div>
-          </div>
-
           {/* TaleBot Controller Deck */}
           <TaleBotController
             commands={currentChallenge.commands || []}
@@ -351,6 +304,15 @@ export default function App() {
             onAssignToSlot={setActiveSlot}
             currentSlot={activeSlot}
           />
+
+          {/* Save to Local Library Button */}
+          <button
+            onClick={handleSaveToLocalLibrary}
+            className="tb-btn tb-btn-purple"
+            style={{ width: '100%', justifyContent: 'center', padding: '0.75rem' }}
+          >
+            <Save size={18} /> Guardar Reto en Mi Biblioteca
+          </button>
         </aside>
       </main>
 
@@ -359,7 +321,11 @@ export default function App() {
         <NewChallengeModal
           numRows={numRows}
           numCols={numCols}
-          onSelectChallengeMode={handleSelectChallengeMode}
+          onGenerateA4Pages={handleGenerateA4Pages}
+          onOpenShapesMode={() => {
+            setIsDrawingMode(true);
+            setActiveModeName('Dibujo y Formas para Rotuladores');
+          }}
           onClose={() => setShowNewChallengeModal(false)}
         />
       )}

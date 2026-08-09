@@ -1,114 +1,63 @@
 import React, { useState } from 'react';
-import { SHAPE_PRESETS, COMMAND_TYPES, solveNavigationPath, generateRandomNoRepeatPath } from '../utils/talebotEngine';
-import { Compass, PenTool, Shuffle, PlusCircle, X } from 'lucide-react';
+import { PRESET_CHALLENGES, MAP_THEMES } from '../utils/presets';
+import { generateRandomNoRepeatPath, solveNavigationPath, COMMAND_TYPES } from '../utils/talebotEngine';
+import { FileText, PlusCircle, X, Sparkles, Wand2, PenTool } from 'lucide-react';
 
 export default function NewChallengeModal({
   numRows = 3,
   numCols = 4,
-  onSelectChallengeMode,
+  onGenerateA4Pages,
+  onOpenShapesMode,
   onClose
 }) {
-  const [obstacleCount, setObstacleCount] = useState(1);
-  const [stepCount, setStepCount] = useState(6);
+  const [pageCount, setPageCount] = useState(1); // 1 Page = 2 Challenges, 2 Pages = 4 Challenges, 3 Pages = 6 Challenges
+  const [selectedTheme, setSelectedTheme] = useState('CLASICO');
 
-  const handleGenerateNavigation = () => {
-    let start, target, obstacles, commands;
-    let attempts = 0;
+  const handleGeneratePages = () => {
+    const totalChallengesNeeded = pageCount * 2;
+    const generatedList = [];
 
-    while (attempts < 50) {
-      attempts++;
-      const startR = Math.floor(Math.random() * numRows);
-      const startC = Math.floor(Math.random() * numCols);
-      const startDir = Math.floor(Math.random() * 4);
-      start = { r: startR, c: startC, dir: startDir };
+    for (let i = 0; i < totalChallengesNeeded; i++) {
+      // Alternate between BFS navigation path and No-Repeat random path
+      if (i % 2 === 0) {
+        const randomPath = generateRandomNoRepeatPath(numRows, numCols, 6);
+        generatedList.push({
+          id: `gen_random_${Date.now()}_${i}`,
+          title: `Reto #${i + 1}: ${randomPath.commands.length} Pasos`,
+          story: 'Programa a TaleBot para completar el recorrido sin repetir ninguna casilla.',
+          difficulty: Math.min(3, Math.floor(i / 2) + 1),
+          numRows,
+          numCols,
+          theme: selectedTheme,
+          start: randomPath.start,
+          target: randomPath.target,
+          obstacles: [],
+          commands: randomPath.commands
+        });
+      } else {
+        const start = { r: numRows - 1, c: 0, dir: 0 };
+        const target = { r: 0, c: numCols - 1 };
+        const obstacles = [{ r: 1, c: 1, type: 'ALTO' }];
+        const bfsCmds = solveNavigationPath(start, target, obstacles, numRows, numCols) || [COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD];
+        bfsCmds.push(COMMAND_TYPES.DANCE);
 
-      let targetR = Math.floor(Math.random() * numRows);
-      let targetC = Math.floor(Math.random() * numCols);
-      while (targetR === startR && targetC === startC) {
-        targetR = Math.floor(Math.random() * numRows);
-        targetC = Math.floor(Math.random() * numCols);
-      }
-      target = { r: targetR, c: targetC };
-
-      obstacles = [];
-      for (let i = 0; i < obstacleCount; i++) {
-        let obsR = Math.floor(Math.random() * numRows);
-        let obsC = Math.floor(Math.random() * numCols);
-        if (
-          (obsR !== start.r || obsC !== start.c) &&
-          (obsR !== target.r || obsC !== target.c) &&
-          !obstacles.some(o => o.r === obsR && o.c === obsC)
-        ) {
-          obstacles.push({ r: obsR, c: obsC, type: 'ALTO' });
-        }
-      }
-
-      commands = solveNavigationPath(start, target, obstacles, numRows, numCols);
-      if (commands && commands.length > 0) {
-        commands.push(COMMAND_TYPES.DANCE);
-        break;
+        generatedList.push({
+          id: `gen_bfs_${Date.now()}_${i}`,
+          title: `Reto #${i + 1}: Misión con Obstáculo`,
+          story: 'Esquiva la señal de alto y lleva al robot hasta la meta dorada.',
+          difficulty: Math.min(3, Math.floor(i / 2) + 1),
+          numRows,
+          numCols,
+          theme: selectedTheme,
+          start,
+          target,
+          obstacles,
+          commands: bfsCmds
+        });
       }
     }
 
-    onSelectChallengeMode({
-      modeName: 'Navegación y Obstáculos',
-      title: '¡Misión de Navegación Especial!',
-      story: 'Ayuda a TaleBot a esquivar los obstáculos y alcanzar la estrella meta.',
-      start,
-      target,
-      obstacles,
-      commands,
-      penMarkerMode: false,
-      isDrawingMode: false
-    });
-    onClose();
-  };
-
-  const handleSelectShapeMode = () => {
-    const defaultShape = SHAPE_PRESETS[0];
-    onSelectChallengeMode({
-      modeName: 'Dibujo y Formas',
-      title: `Forma: ${defaultShape.name}`,
-      story: defaultShape.description,
-      start: defaultShape.start,
-      target: defaultShape.start,
-      obstacles: [],
-      commands: defaultShape.commands,
-      penMarkerMode: true,
-      isDrawingMode: true
-    });
-    onClose();
-  };
-
-  // Generate random non-repeating path (no cell repeated!)
-  const handleGenerateRandomNoRepeat = () => {
-    const generated = generateRandomNoRepeatPath(numRows, numCols, stepCount);
-    onSelectChallengeMode({
-      modeName: 'Ruta Aleatoria (Sin Repetir Casilla)',
-      title: '¡Recorrido Aleatorio Sorpresa!',
-      story: 'Sigue la secuencia misteriosa sin repetir ninguna casilla del mapa.',
-      start: generated.start,
-      target: generated.target,
-      obstacles: [],
-      commands: generated.commands,
-      penMarkerMode: false,
-      isDrawingMode: false
-    });
-    onClose();
-  };
-
-  const handleBlankChallenge = () => {
-    onSelectChallengeMode({
-      modeName: 'Lienzo en Blanco',
-      title: '¡Nuevo Reto Personalizado!',
-      story: 'Dibuja y programa tu propio recorrido en el mapa.',
-      start: { r: numRows - 1, c: 0, dir: 0 },
-      target: { r: 0, c: numCols - 1 },
-      obstacles: [],
-      commands: [],
-      penMarkerMode: false,
-      isDrawingMode: false
-    });
+    onGenerateA4Pages(generatedList);
     onClose();
   };
 
@@ -129,7 +78,7 @@ export default function NewChallengeModal({
     }}>
       <div className="tb-card" style={{
         width: '100%',
-        maxWidth: '620px',
+        maxWidth: '560px',
         display: 'flex',
         flexDirection: 'column',
         gap: '1.2rem',
@@ -140,7 +89,7 @@ export default function NewChallengeModal({
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
             <PlusCircle size={26} color="#FF6900" />
             <h2 style={{ fontFamily: 'Fredoka', color: '#0F172A', fontSize: '1.4rem' }}>
-              Crear Nuevo Reto para TaleBot Pro
+              Generar Fichas A4 de Retos
             </h2>
           </div>
 
@@ -149,109 +98,85 @@ export default function NewChallengeModal({
           </button>
         </div>
 
-        {/* Options Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
-          {/* Option 1: Navigation */}
-          <div style={{
-            background: '#F0F9FF',
-            border: '2px solid #BAE6FD',
-            borderRadius: '16px',
-            padding: '1rem',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            gap: '0.6rem'
-          }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontFamily: 'Fredoka', fontWeight: 700, color: '#0369A1', fontSize: '1rem' }}>
-                <Compass size={20} /> Navegación
-              </div>
-              <p style={{ fontSize: '0.75rem', color: '#0284C7', marginTop: '4px' }}>
-                Desafíos con obstáculos recortables resueltos con IA.
-              </p>
-            </div>
-
-            <div>
-              <label style={{ fontSize: '0.75rem', fontWeight: 800, color: '#0369A1', display: 'block', marginBottom: '2px' }}>
-                Obstáculos: {obstacleCount}
-              </label>
-              <input
-                type="range"
-                min="0"
-                max="3"
-                value={obstacleCount}
-                onChange={(e) => setObstacleCount(parseInt(e.target.value))}
-                style={{ width: '100%', accentColor: '#00A3FF' }}
-              />
-            </div>
-
-            <button onClick={handleGenerateNavigation} className="tb-btn tb-btn-primary" style={{ fontSize: '0.8rem', padding: '0.5rem', justifyContent: 'center' }}>
-              Generar Navegación
-            </button>
-          </div>
-
-          {/* Option 2: Random No-Repeat */}
-          <div style={{
-            background: '#F5F3FF',
-            border: '2px solid #DDD6FE',
-            borderRadius: '16px',
-            padding: '1rem',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            gap: '0.6rem'
-          }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontFamily: 'Fredoka', fontWeight: 700, color: '#6D28D9', fontSize: '1rem' }}>
-                <Shuffle size={20} /> Ruta Aleatoria (Sin Repetir)
-              </div>
-              <p style={{ fontSize: '0.75rem', color: '#7C3AED', marginTop: '4px' }}>
-                Avanza siempre a casillas sin repetir ninguna casilla previa.
-              </p>
-            </div>
-
-            <div>
-              <label style={{ fontSize: '0.75rem', fontWeight: 800, color: '#6D28D9', display: 'block', marginBottom: '2px' }}>
-                Pasos: {stepCount}
-              </label>
-              <input
-                type="range"
-                min="3"
-                max="8"
-                value={stepCount}
-                onChange={(e) => setStepCount(parseInt(e.target.value))}
-                style={{ width: '100%', accentColor: '#8B5CF6' }}
-              />
-            </div>
-
-            <button onClick={handleGenerateRandomNoRepeat} className="tb-btn tb-btn-purple" style={{ fontSize: '0.8rem', padding: '0.5rem', justifyContent: 'center' }}>
-              Generar Aleatorio
-            </button>
+        {/* 1. Select Number of A4 Pages */}
+        <div>
+          <label style={{ fontSize: '0.9rem', fontWeight: 800, color: '#334155', display: 'block', marginBottom: '0.5rem' }}>
+            📄 ¿Cuántas Páginas de Fichas A4 quieres autogenerar?
+          </label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.6rem' }}>
+            {[
+              { pages: 1, challenges: 2, label: '1 Página A4', sub: '(2 Retos)' },
+              { pages: 2, challenges: 4, label: '2 Páginas A4', sub: '(4 Retos)' },
+              { pages: 3, challenges: 6, label: '3 Páginas A4', sub: '(6 Retos)' }
+            ].map((opt) => (
+              <button
+                key={opt.pages}
+                onClick={() => setPageCount(opt.pages)}
+                style={{
+                  padding: '0.8rem 0.5rem',
+                  borderRadius: '14px',
+                  border: pageCount === opt.pages ? '2.5px solid #FF6900' : '2px solid #E2E8F0',
+                  background: pageCount === opt.pages ? '#FFF7ED' : '#F8FAFC',
+                  cursor: 'pointer',
+                  textAlign: 'center'
+                }}
+              >
+                <div style={{ fontFamily: 'Fredoka', fontWeight: 700, fontSize: '0.95rem', color: pageCount === opt.pages ? '#FF6900' : '#0F172A' }}>
+                  {opt.label}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: '2px' }}>
+                  {opt.sub}
+                </div>
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Option 3: Drawing Shapes Catalog Drawer Mode */}
+        {/* 2. Select Theme */}
+        <div>
+          <label style={{ fontSize: '0.85rem', fontWeight: 800, color: '#334155', display: 'block', marginBottom: '0.4rem' }}>
+            🎨 Estilo Visual Ilustrado:
+          </label>
+          <select
+            value={selectedTheme}
+            onChange={(e) => setSelectedTheme(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '0.6rem',
+              borderRadius: '12px',
+              border: '2px solid #CBD5E1',
+              fontFamily: 'Fredoka',
+              fontSize: '0.9rem',
+              background: '#FFFFFF'
+            }}
+          >
+            {Object.values(MAP_THEMES).map((thm) => (
+              <option key={thm.id} value={thm.id}>
+                {thm.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Action Button: Auto-generate A4 Pages */}
         <button
-          onClick={handleSelectShapeMode}
-          className="tb-btn"
-          style={{
-            background: '#FFF7ED',
-            color: '#C2410C',
-            border: '2px solid #FFEDD5',
-            justifyContent: 'center',
-            padding: '0.7rem'
-          }}
+          onClick={handleGeneratePages}
+          className="tb-btn tb-btn-yellow"
+          style={{ width: '100%', justifyContent: 'center', padding: '0.75rem', fontSize: '1rem' }}
         >
-          <PenTool size={18} /> Abrir Catálogo Completo de Formas, Letras y Dibujos
+          <Wand2 size={20} /> Autogenerar {pageCount * 2} Retos para Impresión A4
         </button>
 
-        {/* Option 4: Blank Canvas */}
+        {/* Secondary Action: Open Shapes Library Mode */}
         <button
-          onClick={handleBlankChallenge}
+          onClick={() => {
+            onOpenShapesMode();
+            onClose();
+          }}
           className="tb-btn tb-btn-secondary"
-          style={{ width: '100%', justifyContent: 'center', padding: '0.6rem' }}
+          style={{ width: '100%', justifyContent: 'center', padding: '0.6rem', fontSize: '0.85rem' }}
         >
-          🎨 Empezar Reto en Blanco
+          <PenTool size={16} /> Abrir Catálogo de Formas y Trazados para Rotuladores
         </button>
       </div>
     </div>
