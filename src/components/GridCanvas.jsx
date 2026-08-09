@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getCellLabel, DIRECTIONS } from '../utils/talebotEngine';
+import { getCellLabel, DIRECTIONS, OBSTACLE_TYPES } from '../utils/talebotEngine';
 import { MAP_THEMES } from '../utils/presets';
-import { RotateCw, Flag, Star, OctagonAlert, Music, Volume2, Trash2, X } from 'lucide-react';
+import TaleBotAvatar from './TaleBotAvatar';
+import { X, Trash2, Shield, Feather, Sparkles } from 'lucide-react';
 
 export default function GridCanvas({
   numRows = 3,
@@ -10,30 +11,29 @@ export default function GridCanvas({
   startPos = { r: 2, c: 0, dir: 0 },
   targetPos = { r: 0, c: 3 },
   obstacles = [],
-  specialActions = [], // [{ r, c, type: 'DANCE'|'SOUND' }]
   currentRobotState = null,
   penLines = [],
+  hasWings = false,
+  hasArms = false,
   onSetStartPos,
   onSetTargetPos,
   onToggleObstacle,
-  onToggleSpecialAction,
   onClearCell
 }) {
   const theme = MAP_THEMES[themeKey] || MAP_THEMES.CLASICO;
 
-  // Active popover target cell state: { r, c } or null
+  // Popover target cell: { r, c } or null
   const [activePopoverCell, setActivePopoverCell] = useState(null);
   const containerRef = useRef(null);
 
-  // Active robot state (during animation or default start)
+  // Active robot state
   const activeRobotR = currentRobotState ? currentRobotState.r : startPos.r;
   const activeRobotC = currentRobotState ? currentRobotState.c : startPos.c;
   const activeRobotDir = currentRobotState ? currentRobotState.dir : (startPos.dir || 0);
 
-  const obstacleSet = new Set(obstacles.map(o => `${o.r},${o.c}`));
-  const specialActionMap = new Map(specialActions.map(sa => [`${sa.r},${sa.c}`, sa.type]));
+  const obstacleMap = new Map(obstacles.map(o => [`${o.r},${o.c}`, o.type || 'ALTO']));
 
-  // Close popover when clicking outside
+  // Close popover on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (containerRef.current && !containerRef.current.contains(e.target)) {
@@ -63,13 +63,13 @@ export default function GridCanvas({
       <div 
         style={{
           background: theme.bgGradient,
-          padding: '1.5rem',
+          padding: '1.4rem',
           borderRadius: '32px',
-          boxShadow: '0 20px 45px rgba(255, 105, 0, 0.12), 0 8px 25px rgba(0, 0, 0, 0.08)',
+          boxShadow: '0 25px 50px rgba(0, 0, 0, 0.08), 0 10px 25px rgba(255, 105, 0, 0.08)',
           border: '6px solid #FFFFFF',
           position: 'relative',
           width: '100%',
-          maxWidth: numCols === 4 ? '720px' : '560px',
+          maxWidth: numCols === 4 ? '700px' : '540px',
           aspectRatio: `${numCols} / ${numRows}`,
           transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
         }}
@@ -85,7 +85,7 @@ export default function GridCanvas({
             position: 'relative'
           }}
         >
-          {/* SVG Pen Drawing Layer */}
+          {/* SVG Pen Lines Layer */}
           {penLines && penLines.length > 0 && (
             <svg 
               style={{
@@ -116,24 +116,22 @@ export default function GridCanvas({
                     stroke="#FF0055"
                     strokeWidth="8"
                     strokeLinecap="round"
-                    style={{
-                      filter: 'drop-shadow(0px 3px 6px rgba(255, 0, 85, 0.5))'
-                    }}
+                    style={{ filter: 'drop-shadow(0px 3px 6px rgba(255, 0, 85, 0.5))' }}
                   />
                 );
               })}
             </svg>
           )}
 
-          {/* Render Map Cells */}
+          {/* Render Cells */}
           {Array.from({ length: numRows }).map((_, r) =>
             Array.from({ length: numCols }).map((_, c) => {
               const cellKey = `${r},${c}`;
               const label = getCellLabel(r, c);
               const isStart = startPos.r === r && startPos.c === c;
               const isTarget = targetPos.r === r && targetPos.c === c;
-              const isObstacle = obstacleSet.has(cellKey);
-              const specialType = specialActionMap.get(cellKey);
+              const obstacleTypeId = obstacleMap.get(cellKey);
+              const obstacleObj = OBSTACLE_TYPES.find(o => o.id === obstacleTypeId);
               const isRobotHere = activeRobotR === r && activeRobotC === c;
               const isPopoverActive = activePopoverCell?.r === r && activePopoverCell?.c === c;
 
@@ -144,7 +142,7 @@ export default function GridCanvas({
                   key={cellKey}
                   onClick={() => handleCellClick(r, c)}
                   style={{
-                    background: isObstacle ? '#FFE4E6' : cellBg,
+                    background: obstacleObj ? '#FFE4E6' : cellBg,
                     border: isPopoverActive ? '3px solid #FF6900' : `2.5px dashed ${theme.borderColor}`,
                     borderRadius: '20px',
                     position: 'relative',
@@ -156,8 +154,9 @@ export default function GridCanvas({
                     userSelect: 'none',
                     transition: 'all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
                     boxShadow: isPopoverActive 
-                      ? '0 0 20px rgba(255, 105, 0, 0.4)' 
-                      : 'inset 0 2px 5px rgba(255,255,255,0.9), 0 4px 10px rgba(0,0,0,0.03)'
+                      ? '0 0 24px rgba(255, 105, 0, 0.45)' 
+                      : 'inset 0 2px 5px rgba(255,255,255,0.9), 0 4px 10px rgba(0,0,0,0.03)',
+                    zIndex: isPopoverActive ? 90 : 10
                   }}
                   onMouseEnter={(e) => {
                     if (!isPopoverActive) e.currentTarget.style.transform = 'scale(1.03)';
@@ -174,7 +173,7 @@ export default function GridCanvas({
                     fontSize: '0.75rem',
                     fontWeight: '800',
                     color: '#64748B',
-                    background: 'rgba(255, 255, 255, 0.85)',
+                    background: 'rgba(255, 255, 255, 0.9)',
                     padding: '2px 8px',
                     borderRadius: '10px',
                     backdropFilter: 'blur(4px)',
@@ -183,7 +182,7 @@ export default function GridCanvas({
                     {label}
                   </span>
 
-                  {/* Cell Content Elements */}
+                  {/* Cell Items */}
                   {!isRobotHere && isStart && (
                     <div style={{ fontSize: '2.4rem' }} title="Punto de Inicio">
                       🤖
@@ -200,85 +199,24 @@ export default function GridCanvas({
                     </div>
                   )}
 
-                  {isObstacle && (
-                    <div style={{ fontSize: '2.4rem' }} title="Obstáculo / Alto">
-                      🛑
+                  {obstacleObj && !isRobotHere && (
+                    <div style={{ fontSize: '2.4rem' }} title={obstacleObj.name}>
+                      {obstacleObj.icon}
                     </div>
                   )}
 
-                  {specialType === 'DANCE' && !isRobotHere && (
-                    <div style={{ fontSize: '2.2rem' }} title="Acción Especial: Baile">
-                      💃
-                    </div>
-                  )}
-
-                  {specialType === 'SOUND' && !isRobotHere && (
-                    <div style={{ fontSize: '2.2rem' }} title="Acción Especial: Sonido">
-                      🔊
-                    </div>
-                  )}
-
-                  {/* TaleBot Robot Avatar on active cell */}
+                  {/* Vector TaleBot Avatar on active cell */}
                   {isRobotHere && (
-                    <div 
-                      style={{
-                        position: 'relative',
-                        width: '72%',
-                        height: '72%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        transition: 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                        transform: `rotate(${DIRECTIONS[activeRobotDir].angle}deg)`,
-                        zIndex: 20
-                      }}
-                    >
-                      {/* TaleBot Pro Body */}
-                      <div style={{
-                        width: '100%',
-                        height: '100%',
-                        background: 'linear-gradient(135deg, #FFC700 0%, #FF9500 100%)',
-                        borderRadius: '50%',
-                        border: '4px solid #FFFFFF',
-                        boxShadow: '0 8px 20px rgba(255, 150, 0, 0.6)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        position: 'relative'
-                      }}>
-                        {/* Direction Arrow Indicator */}
-                        <div style={{
-                          position: 'absolute',
-                          top: '-8px',
-                          width: '0',
-                          height: '0',
-                          borderLeft: '9px solid transparent',
-                          borderRight: '9px solid transparent',
-                          borderBottom: '12px solid #00A3FF'
-                        }} />
-
-                        {/* Top Hardware LED Bar */}
-                        <div style={{
-                          width: '65%',
-                          height: '9px',
-                          background: currentRobotState?.ledColor || '#10B981',
-                          borderRadius: '5px',
-                          marginBottom: '3px',
-                          boxShadow: `0 0 10px ${currentRobotState?.ledColor || '#10B981'}`,
-                          transition: 'background 0.2s ease'
-                        }} />
-
-                        {/* Eyes */}
-                        <div style={{ display: 'flex', gap: '10px' }}>
-                          <div style={{ width: '9px', height: '9px', background: '#0F172A', borderRadius: '50%' }} />
-                          <div style={{ width: '9px', height: '9px', background: '#0F172A', borderRadius: '50%' }} />
-                        </div>
-                      </div>
-                    </div>
+                    <TaleBotAvatar
+                      size={numCols === 4 ? 74 : 64}
+                      angle={DIRECTIONS[activeRobotDir].angle}
+                      ledColor={currentRobotState?.ledColor || '#10B981'}
+                      hasWings={hasWings}
+                      hasArms={hasArms}
+                    />
                   )}
 
-                  {/* Popover Action Menu for clicked cell */}
+                  {/* Contextual Popover Action Menu */}
                   {isPopoverActive && (
                     <div 
                       onClick={(e) => e.stopPropagation()}
@@ -286,41 +224,45 @@ export default function GridCanvas({
                         position: 'absolute',
                         top: r === 0 ? '105%' : 'auto',
                         bottom: r > 0 ? '105%' : 'auto',
-                        zIndex: 100,
+                        left: c === 0 ? '0%' : c === numCols - 1 ? 'auto' : '50%',
+                        right: c === numCols - 1 ? '0%' : 'auto',
+                        transform: c !== 0 && c !== numCols - 1 ? 'translateX(-50%)' : 'none',
+                        zIndex: 9999,
                         background: '#FFFFFF',
-                        borderRadius: '20px',
-                        padding: '0.8rem',
-                        boxShadow: '0 15px 35px rgba(0,0,0,0.25), 0 5px 15px rgba(255,105,0,0.15)',
-                        border: '3px solid #FF6900',
+                        borderRadius: '24px',
+                        padding: '1rem',
+                        boxShadow: '0 20px 50px rgba(0,0,0,0.3), 0 8px 20px rgba(255,105,0,0.2)',
+                        border: '3.5px solid #FF6900',
                         display: 'flex',
                         flexDirection: 'column',
-                        gap: '0.5rem',
-                        minWidth: '210px',
-                        animation: 'bounceRobot 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
+                        gap: '0.6rem',
+                        width: '260px',
+                        maxHeight: '320px',
+                        overflowY: 'auto'
                       }}
                     >
                       <div style={{
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
-                        borderBottom: '1.5px dashed #E2E8F0',
+                        borderBottom: '2px dashed #E2E8F0',
                         paddingBottom: '0.4rem'
                       }}>
-                        <span style={{ fontFamily: 'Fredoka', fontWeight: 700, fontSize: '0.85rem', color: '#FF6900' }}>
+                        <span style={{ fontFamily: 'Fredoka', fontWeight: 700, fontSize: '0.95rem', color: '#FF6900' }}>
                           📍 Casilla {label}
                         </span>
                         <button 
                           onClick={() => setActivePopoverCell(null)}
                           style={{ background: 'none', border: 'none', cursor: 'pointer' }}
                         >
-                          <X size={16} color="#64748B" />
+                          <X size={18} color="#64748B" />
                         </button>
                       </div>
 
-                      {/* 1. Set Start & Orientation */}
+                      {/* 1. Set Start & Direction */}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#334155' }}>
-                          🤖 Inicio + Dirección:
+                          🤖 Inicio + Orientación:
                         </span>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px' }}>
                           {DIRECTIONS.map((dirObj, dirIdx) => (
@@ -339,7 +281,6 @@ export default function GridCanvas({
                                 fontWeight: 800,
                                 fontSize: '0.85rem'
                               }}
-                              title={`Inicio mirando al ${dirObj.name}`}
                             >
                               {dirObj.arrow}
                             </button>
@@ -347,79 +288,64 @@ export default function GridCanvas({
                         </div>
                       </div>
 
-                      {/* Quick Action Grid */}
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
-                        {/* Set Target */}
-                        <button
-                          onClick={() => {
-                            onSetTargetPos({ r, c });
-                            setActivePopoverCell(null);
-                          }}
-                          className="tb-btn"
-                          style={{
-                            padding: '0.45rem',
-                            fontSize: '0.75rem',
-                            background: isTarget ? '#FFC700' : '#F1F5F9',
-                            color: '#0F172A',
-                            justifyContent: 'center'
-                          }}
-                        >
-                          ⭐️ Meta
-                        </button>
+                      {/* Set Target Star */}
+                      <button
+                        onClick={() => {
+                          onSetTargetPos({ r, c });
+                          setActivePopoverCell(null);
+                        }}
+                        className="tb-btn"
+                        style={{
+                          padding: '0.45rem',
+                          fontSize: '0.8rem',
+                          background: isTarget ? '#FFC700' : '#F1F5F9',
+                          color: '#0F172A',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        ⭐️ Poner Meta / Objetivo
+                      </button>
 
-                        {/* Set Obstacle */}
-                        <button
-                          onClick={() => {
-                            onToggleObstacle({ r, c });
-                            setActivePopoverCell(null);
-                          }}
-                          className="tb-btn"
-                          style={{
-                            padding: '0.45rem',
-                            fontSize: '0.75rem',
-                            background: isObstacle ? '#F43F5E' : '#F1F5F9',
-                            color: isObstacle ? 'white' : '#0F172A',
-                            justifyContent: 'center'
-                          }}
-                        >
-                          🛑 Obstáculo
-                        </button>
-
-                        {/* Dance */}
-                        <button
-                          onClick={() => {
-                            onToggleSpecialAction({ r, c, type: 'DANCE' });
-                            setActivePopoverCell(null);
-                          }}
-                          className="tb-btn"
-                          style={{
-                            padding: '0.45rem',
-                            fontSize: '0.75rem',
-                            background: specialType === 'DANCE' ? '#8B5CF6' : '#F1F5F9',
-                            color: specialType === 'DANCE' ? 'white' : '#0F172A',
-                            justifyContent: 'center'
-                          }}
-                        >
-                          💃 Baile
-                        </button>
-
-                        {/* Sound */}
-                        <button
-                          onClick={() => {
-                            onToggleSpecialAction({ r, c, type: 'SOUND' });
-                            setActivePopoverCell(null);
-                          }}
-                          className="tb-btn"
-                          style={{
-                            padding: '0.45rem',
-                            fontSize: '0.75rem',
-                            background: specialType === 'SOUND' ? '#EC4899' : '#F1F5F9',
-                            color: specialType === 'SOUND' ? 'white' : '#0F172A',
-                            justifyContent: 'center'
-                          }}
-                        >
-                          🔊 Sonido
-                        </button>
+                      {/* Select Obstacle Type */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#334155' }}>
+                          🛑 Seleccionar Obstáculo Recortable:
+                        </span>
+                        <div style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(3, 1fr)',
+                          gap: '4px',
+                          maxHeight: '120px',
+                          overflowY: 'auto'
+                        }}>
+                          {OBSTACLE_TYPES.map((obs) => (
+                            <button
+                              key={obs.id}
+                              onClick={() => {
+                                onToggleObstacle({ r, c, type: obs.id });
+                                setActivePopoverCell(null);
+                              }}
+                              style={{
+                                padding: '0.4rem 0.2rem',
+                                borderRadius: '10px',
+                                border: obstacleTypeId === obs.id ? '2px solid #F43F5E' : '1px solid #E2E8F0',
+                                background: obstacleTypeId === obs.id ? '#FFE4E6' : '#FFFFFF',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                fontSize: '0.7rem',
+                                fontWeight: 700
+                              }}
+                              title={obs.description}
+                            >
+                              <span style={{ fontSize: '1.1rem' }}>{obs.icon}</span>
+                              <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', maxWidth: '60px' }}>
+                                {obs.name}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
                       </div>
 
                       {/* Clear Cell */}
@@ -429,21 +355,21 @@ export default function GridCanvas({
                           setActivePopoverCell(null);
                         }}
                         style={{
-                          padding: '0.35rem',
-                          borderRadius: '8px',
+                          padding: '0.4rem',
+                          borderRadius: '10px',
                           border: 'none',
                           background: '#F1F5F9',
                           color: '#EF4444',
                           fontWeight: 700,
-                          fontSize: '0.75rem',
+                          fontSize: '0.8rem',
                           cursor: 'pointer',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          gap: '4px'
+                          gap: '6px'
                         }}
                       >
-                        <Trash2 size={12} /> Limpiar Casilla
+                        <Trash2 size={14} /> Limpiar Casilla
                       </button>
                     </div>
                   )}

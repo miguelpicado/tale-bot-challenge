@@ -3,10 +3,10 @@
 // Orientations: 0 = Up/North (▲), 1 = Right/East (►), 2 = Down/South (▼), 3 = Left/West (◄)
 
 export const DIRECTIONS = [
-  { name: 'Norte', dx: 0, dy: -1, angle: 0, arrow: '▲' },
-  { name: 'Este', dx: 1, dy: 0, angle: 90, arrow: '►' },
-  { name: 'Sur', dx: 0, dy: 1, angle: 180, arrow: '▼' },
-  { name: 'Oeste', dx: -1, dy: 0, angle: 270, arrow: '◄' },
+  { id: 'NORTH', name: 'Norte', dx: 0, dy: -1, angle: 0, arrow: '▲' },
+  { id: 'EAST', name: 'Este', dx: 1, dy: 0, angle: 90, arrow: '►' },
+  { id: 'SOUTH', name: 'Sur', dx: 0, dy: 1, angle: 180, arrow: '▼' },
+  { id: 'WEST', name: 'Oeste', dx: -1, dy: 0, angle: 270, arrow: '◄' },
 ];
 
 export const COMMAND_TYPES = {
@@ -21,7 +21,22 @@ export const COMMAND_TYPES = {
   PEN_UP: { id: 'PEN_UP', name: 'Subir Rotulador', color: '#64748B', textColor: '#FFFFFF', icon: '✍️', ledColor: '#94A3B8', key: 'U' },
 };
 
-// Map cell coordinates label format (A1, A2... B1, B2...)
+// 12 Printable Cut-out Obstacle Types
+export const OBSTACLE_TYPES = [
+  { id: 'ARBOL', name: 'Árbol', icon: '🌳', description: 'Rodear o volar por encima con Alas 🪽', requiresWings: true },
+  { id: 'MURO', name: 'Muro', icon: '🧱', description: 'Rodear o derribar con Brazos 🦾', requiresArms: true },
+  { id: 'PUENTE_NS', name: 'Puente Norte-Sur', icon: '🌉', description: 'Pasar solo en sentido vertical (Norte-Sur)' },
+  { id: 'PUENTE_EO', name: 'Puente Este-Oeste', icon: '🌉', description: 'Pasar solo en sentido horizontal (Este-Oeste)' },
+  { id: 'FUEGO', name: 'Fuego', icon: '🔥', description: 'Barrera insuperable (no se puede cruzar ni volar)' },
+  { id: 'LAGO', name: 'Lago', icon: '🌊', description: 'Cruzar volando con las Alas 🪽 de TaleBot', requiresWingsOnly: true },
+  { id: 'FIESTA', name: 'Fiesta', icon: '💃', description: 'Obliga a parar y ejecutar comando BAILAR 💃', forceAction: 'DANCE' },
+  { id: 'VOZ', name: 'Mensaje de Voz', icon: '🎙️', description: 'Obliga a parar y reproducir SONIDO 🔊', forceAction: 'SOUND' },
+  { id: 'ROTONDA', name: 'Rotonda', icon: '🔄', description: 'Obliga a dar una vuelta completa (360°) en la casilla', forceAction: 'ROTATION_360' },
+  { id: 'MEDIO_MURO', name: 'Medio Muro', icon: '🚧', description: 'Obliga a dar media vuelta (180°) y continuar marcha atrás', forceAction: 'TURN_180' },
+  { id: 'TESORO', name: 'Tesoro', icon: '🪙', description: 'Premio o moneda recolectable' },
+  { id: 'ALTO', name: 'Señal de Alto', icon: '🛑', description: 'Obstáculo de detención estándar' }
+];
+
 export function getCellLabel(row, col) {
   const rowLetters = ['A', 'B', 'C', 'D', 'E'];
   return `${rowLetters[row] || row + 1}${col + 1}`;
@@ -35,7 +50,6 @@ export function turnRightDir(dir) {
   return (dir + 1) % 4;
 }
 
-// Expand command list handling LOOP commands
 export function expandLoopCommands(rawCommands) {
   const expanded = [];
   const historyBeforeLoop = [];
@@ -43,7 +57,6 @@ export function expandLoopCommands(rawCommands) {
   for (let i = 0; i < rawCommands.length; i++) {
     const cmd = rawCommands[i];
     if (cmd.id === 'LOOP') {
-      // Repeat the block of commands preceding the LOOP command
       expanded.push(...historyBeforeLoop);
     } else {
       expanded.push(cmd);
@@ -54,8 +67,8 @@ export function expandLoopCommands(rawCommands) {
   return expanded;
 }
 
-// Execute commands and compute complete trajectory
-export function simulatePath(start, rawCommands, numRows = 3, numCols = 4) {
+// Simulate full trajectory considering special obstacles & accessories
+export function simulatePath(start, rawCommands, numRows = 3, numCols = 4, accessories = { wings: false, arms: false }) {
   const commands = expandLoopCommands(rawCommands);
 
   let currR = start.r;
@@ -66,7 +79,6 @@ export function simulatePath(start, rawCommands, numRows = 3, numCols = 4) {
   const trajectory = [{ r: currR, c: currC, dir: currDir, penDown: isPenDown, step: 0 }];
   const visitedCells = new Set([`${currR},${currC}`]);
   const penLines = [];
-  const events = [];
   let isOutOfBounds = false;
 
   commands.forEach((cmd, idx) => {
@@ -86,11 +98,7 @@ export function simulatePath(start, rawCommands, numRows = 3, numCols = 4) {
           currC = nextC;
           visitedCells.add(`${currR},${currC}`);
           if (isPenDown) {
-            penLines.push({
-              from: { r: prevR, c: prevC },
-              to: { r: currR, c: currC },
-              step: idx + 1
-            });
+            penLines.push({ from: { r: prevR, c: prevC }, to: { r: currR, c: currC }, step: idx + 1 });
           }
         } else {
           isOutOfBounds = true;
@@ -107,11 +115,7 @@ export function simulatePath(start, rawCommands, numRows = 3, numCols = 4) {
           currC = nextC;
           visitedCells.add(`${currR},${currC}`);
           if (isPenDown) {
-            penLines.push({
-              from: { r: prevR, c: prevC },
-              to: { r: currR, c: currC },
-              step: idx + 1
-            });
+            penLines.push({ from: { r: prevR, c: prevC }, to: { r: currR, c: currC }, step: idx + 1 });
           }
         } else {
           isOutOfBounds = true;
@@ -123,12 +127,6 @@ export function simulatePath(start, rawCommands, numRows = 3, numCols = 4) {
         break;
       case 'TURN_RIGHT':
         currDir = turnRightDir(currDir);
-        break;
-      case 'DANCE':
-        events.push({ type: 'DANCE', r: currR, c: currC, step: idx + 1 });
-        break;
-      case 'SOUND':
-        events.push({ type: 'SOUND', r: currR, c: currC, step: idx + 1 });
         break;
       case 'PEN_DOWN':
         isPenDown = true;
@@ -154,14 +152,12 @@ export function simulatePath(start, rawCommands, numRows = 3, numCols = 4) {
     trajectory,
     visitedCells: Array.from(visitedCells),
     penLines,
-    events,
     endPosition: { r: currR, c: currC, dir: currDir },
     isOutOfBounds,
     expandedCommands: commands
   };
 }
 
-// Find shortest command path from Start to End avoiding obstacles (BFS)
 export function solveNavigationPath(start, end, obstacles = [], numRows = 3, numCols = 4) {
   const obstacleSet = new Set(obstacles.map(o => `${o.r},${o.c}`));
   const queue = [{ r: start.r, c: start.c, dir: start.dir || 0, path: [] }];
@@ -226,7 +222,6 @@ export function solveNavigationPath(start, end, obstacles = [], numRows = 3, num
   return null;
 }
 
-// Drawing shapes presets
 export const SHAPE_PRESETS = [
   {
     id: 'cuadrado_loop',
@@ -237,7 +232,7 @@ export const SHAPE_PRESETS = [
       COMMAND_TYPES.PEN_DOWN,
       COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD,
       COMMAND_TYPES.TURN_RIGHT,
-      COMMAND_TYPES.LOOP, // Repeats the 2 forward + turn right block!
+      COMMAND_TYPES.LOOP,
       COMMAND_TYPES.DANCE
     ]
   },
@@ -268,55 +263,6 @@ export const SHAPE_PRESETS = [
       COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD,
       COMMAND_TYPES.TURN_LEFT,
       COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD,
-      COMMAND_TYPES.DANCE
-    ]
-  },
-  {
-    id: 'letra_C',
-    name: 'Letra C 🇨',
-    description: 'Dibuja el contorno de la letra C',
-    start: { r: 0, c: 2, dir: 3 },
-    commands: [
-      COMMAND_TYPES.PEN_DOWN,
-      COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD,
-      COMMAND_TYPES.TURN_LEFT,
-      COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD,
-      COMMAND_TYPES.TURN_LEFT,
-      COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD,
-      COMMAND_TYPES.SOUND
-    ]
-  },
-  {
-    id: 'letra_O',
-    name: 'Letra O ⭕',
-    description: 'Dibuja un círculo/cuadrado cerrado O',
-    start: { r: 1, c: 1, dir: 0 },
-    commands: [
-      COMMAND_TYPES.PEN_DOWN,
-      COMMAND_TYPES.FORWARD,
-      COMMAND_TYPES.TURN_RIGHT,
-      COMMAND_TYPES.FORWARD,
-      COMMAND_TYPES.TURN_RIGHT,
-      COMMAND_TYPES.FORWARD,
-      COMMAND_TYPES.TURN_RIGHT,
-      COMMAND_TYPES.FORWARD,
-      COMMAND_TYPES.DANCE
-    ]
-  },
-  {
-    id: 'zigzag',
-    name: 'Zig-Zag ⚡',
-    description: 'Patrón serpenteante en zig-zag',
-    start: { r: 2, c: 0, dir: 0 },
-    commands: [
-      COMMAND_TYPES.PEN_DOWN,
-      COMMAND_TYPES.FORWARD,
-      COMMAND_TYPES.TURN_RIGHT,
-      COMMAND_TYPES.FORWARD,
-      COMMAND_TYPES.TURN_LEFT,
-      COMMAND_TYPES.FORWARD,
-      COMMAND_TYPES.TURN_RIGHT,
-      COMMAND_TYPES.FORWARD,
       COMMAND_TYPES.DANCE
     ]
   }

@@ -3,47 +3,56 @@ import confetti from 'canvas-confetti';
 import Header from './components/Header';
 import GridCanvas from './components/GridCanvas';
 import TaleBotController from './components/TaleBotController';
-import GeneratorPanel from './components/GeneratorPanel';
 import ChallengeEditor from './components/ChallengeEditor';
 import PrintSheetPreview from './components/PrintSheetPreview';
 import SavedLibraryModal from './components/SavedLibraryModal';
 import GoogleDriveModal from './components/GoogleDriveModal';
+import NewChallengeModal from './components/NewChallengeModal';
+import SavePrintModal from './components/SavePrintModal';
 
 import { PRESET_CHALLENGES } from './utils/presets';
 import { simulatePath, solveNavigationPath, COMMAND_TYPES } from './utils/talebotEngine';
 import { saveChallengesToLocal, loadChallengesFromLocal, getSavedGoogleClientId } from './utils/storage';
-import { Save, Sparkles, Printer, Wand2 } from 'lucide-react';
+import { Feather, Shield, Sparkles } from 'lucide-react';
 
 export default function App() {
-  // Orientation state: 'landscape' (3 rows x 4 cols) or 'portrait' (4 rows x 3 cols)
+  // Orientation: 'landscape' (3x4) or 'portrait' (4x3)
   const [orientation, setOrientation] = useState('landscape');
   const numRows = orientation === 'landscape' ? 3 : 4;
   const numCols = orientation === 'landscape' ? 4 : 3;
 
-  // Active Slot Editor state (Slot 1 or Slot 2 for the A4 sheet)
+  // Active A4 Sheet Slot (1 or 2)
   const [activeSlot, setActiveSlot] = useState(1);
 
-  // Challenges for the 2 A4 Slots
+  // Challenges for Slot 1 and Slot 2
   const [challenge1, setChallenge1] = useState(PRESET_CHALLENGES[0]);
   const [challenge2, setChallenge2] = useState(PRESET_CHALLENGES[1]);
 
-  // Current active challenge being edited
   const currentChallenge = activeSlot === 1 ? challenge1 : challenge2;
   const setCurrentChallenge = (updated) => {
     if (activeSlot === 1) setChallenge1(updated);
     else setChallenge2(updated);
   };
 
-  // Saved challenges array in localStorage
+  // Active Mode Name Badge
+  const [activeModeName, setActiveModeName] = useState('Navegación y Obstáculos');
+
+  // Saved challenges in LocalStorage
   const [savedChallenges, setSavedChallenges] = useState([]);
 
-  // Simulation & Animation playback state
+  // Accessories: Wings & Arms
+  const [hasWings, setHasWings] = useState(false);
+  const [hasArms, setHasArms] = useState(false);
+
+  // Live simulation playback
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [robotSimState, setRobotSimState] = useState(null);
   const [activePenLines, setActivePenLines] = useState([]);
 
   // Modals state
+  const [showNewChallengeModal, setShowNewChallengeModal] = useState(false);
+  const [showSavePrintModal, setShowSavePrintModal] = useState(false);
   const [showPrintPreview, setShowPrintPreview] = useState(false);
   const [showLibrary, setShowLibrary] = useState(false);
   const [showDriveModal, setShowDriveModal] = useState(false);
@@ -56,7 +65,6 @@ export default function App() {
     }
   }, []);
 
-  // Save custom challenges to LocalStorage
   const handleSaveToLocalLibrary = () => {
     const newChallenge = {
       ...currentChallenge,
@@ -68,7 +76,6 @@ export default function App() {
     alert('¡Reto guardado con éxito en tu biblioteca local!');
   };
 
-  // Toggle Orientation
   const handleToggleOrientation = () => {
     const nextOrient = orientation === 'landscape' ? 'portrait' : 'landscape';
     setOrientation(nextOrient);
@@ -88,7 +95,7 @@ export default function App() {
       numCols: nextCols,
       start: adjustPos(prev.start),
       target: adjustPos(prev.target),
-      obstacles: prev.obstacles.map(adjustPos)
+      obstacles: (prev.obstacles || []).map(adjustPos)
     }));
 
     setChallenge2(prev => ({
@@ -97,68 +104,40 @@ export default function App() {
       numCols: nextCols,
       start: adjustPos(prev.start),
       target: adjustPos(prev.target),
-      obstacles: prev.obstacles.map(adjustPos)
+      obstacles: (prev.obstacles || []).map(adjustPos)
     }));
   };
 
-  // Cell Popover Contextual Action Handlers
+  // Popover cell action handlers
   const handleSetStartPos = (pos) => {
-    setCurrentChallenge({
-      ...currentChallenge,
-      start: pos
-    });
+    setCurrentChallenge({ ...currentChallenge, start: pos });
   };
 
   const handleSetTargetPos = (pos) => {
-    setCurrentChallenge({
-      ...currentChallenge,
-      target: pos
-    });
+    setCurrentChallenge({ ...currentChallenge, target: pos });
   };
 
-  const handleToggleObstacle = (pos) => {
-    const existingIdx = (currentChallenge.obstacles || []).findIndex(o => o.r === pos.r && o.c === pos.c);
+  const handleToggleObstacle = ({ r, c, type }) => {
+    const existingIdx = (currentChallenge.obstacles || []).findIndex(o => o.r === r && o.c === c);
     let updatedObs = [...(currentChallenge.obstacles || [])];
     if (existingIdx >= 0) {
-      updatedObs.splice(existingIdx, 1);
-    } else {
-      updatedObs.push(pos);
-    }
-    setCurrentChallenge({
-      ...currentChallenge,
-      obstacles: updatedObs
-    });
-  };
-
-  const handleToggleSpecialAction = ({ r, c, type }) => {
-    const existingIdx = (currentChallenge.specialActions || []).findIndex(sa => sa.r === r && sa.c === c);
-    let updatedSA = [...(currentChallenge.specialActions || [])];
-    if (existingIdx >= 0) {
-      if (updatedSA[existingIdx].type === type) {
-        updatedSA.splice(existingIdx, 1);
+      if (updatedObs[existingIdx].type === type) {
+        updatedObs.splice(existingIdx, 1);
       } else {
-        updatedSA[existingIdx].type = type;
+        updatedObs[existingIdx].type = type;
       }
     } else {
-      updatedSA.push({ r, c, type });
+      updatedObs.push({ r, c, type: type || 'ALTO' });
     }
-    setCurrentChallenge({
-      ...currentChallenge,
-      specialActions: updatedSA
-    });
+    setCurrentChallenge({ ...currentChallenge, obstacles: updatedObs });
   };
 
   const handleClearCell = (r, c) => {
     let updatedObs = (currentChallenge.obstacles || []).filter(o => o.r !== r || o.c !== c);
-    let updatedSA = (currentChallenge.specialActions || []).filter(sa => sa.r !== r || sa.c !== c);
-    setCurrentChallenge({
-      ...currentChallenge,
-      obstacles: updatedObs,
-      specialActions: updatedSA
-    });
+    setCurrentChallenge({ ...currentChallenge, obstacles: updatedObs });
   };
 
-  // TaleBot Commands Controller Handlers
+  // Controller command handlers
   const handleAddCommand = (cmdType) => {
     setCurrentChallenge({
       ...currentChallenge,
@@ -176,7 +155,6 @@ export default function App() {
     setCurrentChallenge({ ...currentChallenge, commands: [] });
   };
 
-  // Auto Solve Path using BFS
   const handleAutoSolvePath = () => {
     const solvedCmds = solveNavigationPath(
       currentChallenge.start,
@@ -188,17 +166,13 @@ export default function App() {
 
     if (solvedCmds) {
       solvedCmds.push(COMMAND_TYPES.DANCE);
-      setCurrentChallenge({
-        ...currentChallenge,
-        commands: solvedCmds
-      });
+      setCurrentChallenge({ ...currentChallenge, commands: solvedCmds });
       confetti({ particleCount: 60, spread: 70, origin: { y: 0.7 } });
     } else {
       alert('No se encontró un camino válido hasta la meta con los obstáculos actuales.');
     }
   };
 
-  // Live Step-by-step Simulation Player
   const handleRunSimulation = () => {
     if (isPlaying) {
       setIsPlaying(false);
@@ -211,7 +185,8 @@ export default function App() {
       currentChallenge.start,
       currentChallenge.commands || [],
       numRows,
-      numCols
+      numCols,
+      { wings: hasWings, arms: hasArms }
     );
 
     setIsPlaying(true);
@@ -236,11 +211,11 @@ export default function App() {
     }, 550);
   };
 
-  // Apply Generated Challenge from Generator Panel
-  const handleApplyGeneratedChallenge = (genData) => {
+  const handleSelectChallengeMode = (modeData) => {
+    setActiveModeName(modeData.modeName);
     setCurrentChallenge({
       ...currentChallenge,
-      ...genData,
+      ...modeData,
       numRows,
       numCols
     });
@@ -254,20 +229,10 @@ export default function App() {
       <Header
         orientation={orientation}
         onToggleOrientation={handleToggleOrientation}
-        onOpenPrintPreview={() => setShowPrintPreview(true)}
+        onOpenNewChallengeModal={() => setShowNewChallengeModal(true)}
+        onOpenSavePrintModal={() => setShowSavePrintModal(true)}
         onOpenLibrary={() => setShowLibrary(true)}
-        onOpenDriveModal={() => setShowDriveModal(true)}
-        onResetChallenge={() => setCurrentChallenge({
-          ...PRESET_CHALLENGES[0],
-          numRows,
-          numCols,
-          start: { r: numRows - 1, c: 0, dir: 0 },
-          target: { r: 0, c: numCols - 1 },
-          obstacles: [],
-          specialActions: [],
-          commands: []
-        })}
-        hasGoogleDriveConfigured={!!getSavedGoogleClientId()}
+        activeModeName={activeModeName}
       />
 
       {/* Main Hero Workspace */}
@@ -278,13 +243,12 @@ export default function App() {
         padding: '1.5rem',
         flex: 1,
         display: 'grid',
-        gridTemplateColumns: '1fr 380px',
-        gap: '1.5rem',
+        gridTemplateColumns: '1fr 400px',
+        gap: '1.8rem',
         alignItems: 'start'
       }}>
-        {/* Central Hero Column: Prominent Grid Map & Controller Dock */}
-        <section style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', alignItems: 'center' }}>
-          {/* Prominent Hero Grid Map Canvas */}
+        {/* Left Hero Column: Prominent 3x4 Grid Map Canvas */}
+        <section style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem', alignItems: 'center' }}>
           <GridCanvas
             numRows={numRows}
             numCols={numCols}
@@ -292,17 +256,58 @@ export default function App() {
             startPos={currentChallenge.start}
             targetPos={currentChallenge.target}
             obstacles={currentChallenge.obstacles || []}
-            specialActions={currentChallenge.specialActions || []}
             currentRobotState={robotSimState}
             penLines={activePenLines}
+            hasWings={hasWings}
+            hasArms={hasArms}
             onSetStartPos={handleSetStartPos}
             onSetTargetPos={handleSetTargetPos}
             onToggleObstacle={handleToggleObstacle}
-            onToggleSpecialAction={handleToggleSpecialAction}
             onClearCell={handleClearCell}
           />
+        </section>
 
-          {/* Physical Controller Docked Directly Below Map */}
+        {/* Right Sidebar: TaleBot Controller & Challenge Editor */}
+        <aside style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+          {/* Accessories Control Box (Wings & Arms) */}
+          <div className="tb-card" style={{ padding: '0.8rem 1.2rem' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#334155', display: 'block', marginBottom: '0.5rem' }}>
+              🦾 Accesorios Físicos de TaleBot Pro:
+            </span>
+            <div style={{ display: 'flex', gap: '0.6rem' }}>
+              <button
+                onClick={() => setHasWings(!hasWings)}
+                className="tb-btn"
+                style={{
+                  flex: 1,
+                  padding: '0.5rem',
+                  fontSize: '0.8rem',
+                  background: hasWings ? '#38BDF8' : '#F1F5F9',
+                  color: hasWings ? 'white' : '#64748B',
+                  justifyContent: 'center'
+                }}
+              >
+                🪽 {hasWings ? 'Alas Puestas' : 'Poner Alas'}
+              </button>
+
+              <button
+                onClick={() => setHasArms(!hasArms)}
+                className="tb-btn"
+                style={{
+                  flex: 1,
+                  padding: '0.5rem',
+                  fontSize: '0.8rem',
+                  background: hasArms ? '#F97316' : '#F1F5F9',
+                  color: hasArms ? 'white' : '#64748B',
+                  justifyContent: 'center'
+                }}
+              >
+                🦾 {hasArms ? 'Brazos Puestos' : 'Poner Brazos'}
+              </button>
+            </div>
+          </div>
+
+          {/* TaleBot Controller Deck */}
           <TaleBotController
             commands={currentChallenge.commands || []}
             onAddCommand={handleAddCommand}
@@ -318,37 +323,36 @@ export default function App() {
               penMarkerMode: !currentChallenge.penMarkerMode
             })}
           />
-        </section>
 
-        {/* Right Sidebar: Challenge Details, Generator, & Save */}
-        <aside style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-          {/* Challenge Details Editor & A4 Sheet Slot Assign */}
+          {/* Challenge Details Editor */}
           <ChallengeEditor
             challenge={currentChallenge}
             onChangeChallenge={setCurrentChallenge}
             onAssignToSlot={setActiveSlot}
             currentSlot={activeSlot}
           />
-
-          {/* Automatic Challenge Generator */}
-          <GeneratorPanel
-            numRows={numRows}
-            numCols={numCols}
-            onApplyGeneratedChallenge={handleApplyGeneratedChallenge}
-          />
-
-          {/* Save to Local Library Button */}
-          <button
-            onClick={handleSaveToLocalLibrary}
-            className="tb-btn tb-btn-purple"
-            style={{ width: '100%', justifyContent: 'center', padding: '0.75rem' }}
-          >
-            <Save size={18} /> Guardar Reto en Mi Biblioteca
-          </button>
         </aside>
       </main>
 
-      {/* Modals & Overlays */}
+      {/* Modals */}
+      {showNewChallengeModal && (
+        <NewChallengeModal
+          numRows={numRows}
+          numCols={numCols}
+          onSelectChallengeMode={handleSelectChallengeMode}
+          onClose={() => setShowNewChallengeModal(false)}
+        />
+      )}
+
+      {showSavePrintModal && (
+        <SavePrintModal
+          onSaveLocal={handleSaveToLocalLibrary}
+          onOpenDrive={() => setShowDriveModal(true)}
+          onOpenPrint={() => setShowPrintPreview(true)}
+          onClose={() => setShowSavePrintModal(false)}
+        />
+      )}
+
       {showPrintPreview && (
         <PrintSheetPreview
           challenge1={challenge1}

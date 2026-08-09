@@ -1,7 +1,7 @@
 import React from 'react';
-import { getCellLabel, COMMAND_TYPES, DIRECTIONS } from '../utils/talebotEngine';
+import { getCellLabel, COMMAND_TYPES, DIRECTIONS, OBSTACLE_TYPES } from '../utils/talebotEngine';
 import { MAP_THEMES } from '../utils/presets';
-import { Printer, X, CheckCircle, Sparkles } from 'lucide-react';
+import { Printer, X, Scissors } from 'lucide-react';
 
 export default function PrintSheetPreview({
   challenge1,
@@ -17,11 +17,11 @@ export default function PrintSheetPreview({
     const theme = MAP_THEMES[ch.theme] || MAP_THEMES.CLASICO;
     const numRows = ch.numRows || 3;
     const numCols = ch.numCols || 4;
-    const obstacleSet = new Set((ch.obstacles || []).map(o => `${o.r},${o.c}`));
+    const obstacleMap = new Map((ch.obstacles || []).map(o => [`${o.r},${o.c}`, o.type || 'ALTO']));
 
     return (
       <div style={{
-        border: '3px solid #00A3FF',
+        border: '3px solid #FF6900',
         borderRadius: '18px',
         padding: '1rem',
         background: '#FFFFFF',
@@ -41,7 +41,7 @@ export default function PrintSheetPreview({
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
             <span style={{
-              background: '#00A3FF',
+              background: '#FF6900',
               color: 'white',
               fontFamily: 'Fredoka',
               fontWeight: 700,
@@ -93,13 +93,14 @@ export default function PrintSheetPreview({
                   const cellKey = `${r},${c}`;
                   const isStart = ch.start.r === r && ch.start.c === c;
                   const isTarget = ch.target && ch.target.r === r && ch.target.c === c;
-                  const isObstacle = obstacleSet.has(cellKey);
+                  const obsTypeId = obstacleMap.get(cellKey);
+                  const obsObj = OBSTACLE_TYPES.find(o => o.id === obsTypeId);
 
                   return (
                     <div
                       key={cellKey}
                       style={{
-                        background: isObstacle ? '#FFE4E6' : '#FFFFFF',
+                        background: obsObj ? '#FFE4E6' : '#FFFFFF',
                         border: '1.5px dashed #CBD5E1',
                         borderRadius: '8px',
                         position: 'relative',
@@ -121,12 +122,7 @@ export default function PrintSheetPreview({
                       </span>
 
                       {isStart && (
-                        <div style={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          lineHeight: 1
-                        }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1 }}>
                           <span>🤖</span>
                           <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#00A3FF' }}>
                             {DIRECTIONS[ch.start.dir || 0].arrow}
@@ -135,7 +131,7 @@ export default function PrintSheetPreview({
                       )}
 
                       {isTarget && <span>{theme.icons.target}</span>}
-                      {isObstacle && <span>{theme.icons.obstacle}</span>}
+                      {obsObj && <span>{obsObj.icon}</span>}
                     </div>
                   );
                 })
@@ -188,9 +184,6 @@ export default function PrintSheetPreview({
 
   const renderSingleChallengeBack = (ch, index) => {
     if (!ch) return null;
-    const theme = MAP_THEMES[ch.theme] || MAP_THEMES.CLASICO;
-    const numRows = ch.numRows || 3;
-    const numCols = ch.numCols || 4;
 
     return (
       <div style={{
@@ -204,7 +197,6 @@ export default function PrintSheetPreview({
         boxSizing: 'border-box',
         height: '48%'
       }}>
-        {/* Solution Header */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
@@ -230,16 +222,11 @@ export default function PrintSheetPreview({
           </div>
         </div>
 
-        {/* Solved Commands Cards */}
         <div>
           <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#065F46', display: 'block', marginBottom: '6px' }}>
             ✅ Secuencia correcta de botones TaleBot Pro:
           </span>
-          <div style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: '6px'
-          }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
             {(ch.commands || []).map((cmd, i) => {
               const cmdInfo = COMMAND_TYPES[cmd.id] || COMMAND_TYPES.FORWARD;
               return (
@@ -301,10 +288,10 @@ export default function PrintSheetPreview({
       }}>
         <div>
           <h3 style={{ fontFamily: 'Fredoka', color: '#0F172A', fontSize: '1.2rem' }}>
-            🖨️ Vista Previa de Ficha Folio A4 (Doble Cara)
+            🖨️ Fichas A4 + Obstáculos Recortables para el Mapa Físico
           </h3>
           <p style={{ fontSize: '0.8rem', color: '#64748B', fontWeight: 600 }}>
-            Página 1: Los 2 retos vacíos | Página 2: Las 2 soluciones alineadas
+            Pág 1: Ejercicios | Pág 2: Soluciones | Pág 3: 12 Obstáculos recortables
           </p>
         </div>
 
@@ -319,44 +306,34 @@ export default function PrintSheetPreview({
         </div>
       </div>
 
-      {/* Printable Sheet Container (2 Pages for A4) */}
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '2rem',
-        alignItems: 'center'
-      }}>
+      {/* Printable Sheet Container (3 Pages for A4) */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', alignItems: 'center' }}>
         {/* PAGE 1 (Front Side - Worksheets) */}
         <div className="print-page" style={{
           width: '210mm',
           height: '297mm',
           background: 'white',
           borderRadius: '16px',
-          boxShadow: '0 15px 35px rgba(0,0,0,0.2)',
           padding: '15mm',
           boxSizing: 'border-box',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between'
         }}>
-          {/* Header Branding */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            borderBottom: '3px solid #FFC700',
+            borderBottom: '3px solid #FF6900',
             paddingBottom: '0.5rem'
           }}>
             <h2 style={{ fontFamily: 'Fredoka', color: '#0F172A', fontSize: '1.4rem' }}>
               🤖 TaleBot Pro - Fichas de Programación
             </h2>
-            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748B' }}>Página 1 / 2 (Frente)</span>
+            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748B' }}>Página 1 / 3 (Frente)</span>
           </div>
 
-          {/* Challenge 1 */}
           {renderSingleChallengeFront(challenge1, 1)}
-
-          {/* Challenge 2 */}
           {renderSingleChallengeFront(challenge2, 2)}
         </div>
 
@@ -366,14 +343,12 @@ export default function PrintSheetPreview({
           height: '297mm',
           background: 'white',
           borderRadius: '16px',
-          boxShadow: '0 15px 35px rgba(0,0,0,0.2)',
           padding: '15mm',
           boxSizing: 'border-box',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between'
         }}>
-          {/* Header Branding */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -384,14 +359,105 @@ export default function PrintSheetPreview({
             <h2 style={{ fontFamily: 'Fredoka', color: '#065F46', fontSize: '1.4rem' }}>
               🔑 Soluciones de las Fichas (Reverso)
             </h2>
-            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748B' }}>Página 2 / 2 (Reverso)</span>
+            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748B' }}>Página 2 / 3 (Reverso)</span>
           </div>
 
-          {/* Solution 1 */}
           {renderSingleChallengeBack(challenge1, 1)}
-
-          {/* Solution 2 */}
           {renderSingleChallengeBack(challenge2, 2)}
+        </div>
+
+        {/* PAGE 3 (Printable 12 Cut-out Obstacles Sheet - Vertical 4x3 Grid) */}
+        <div className="print-page" style={{
+          width: '210mm',
+          height: '297mm',
+          background: 'white',
+          borderRadius: '16px',
+          padding: '15mm',
+          boxSizing: 'border-box',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            borderBottom: '3px solid #8B5CF6',
+            paddingBottom: '0.5rem'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Scissors size={24} color="#8B5CF6" />
+              <h2 style={{ fontFamily: 'Fredoka', color: '#0F172A', fontSize: '1.4rem' }}>
+                ✂️ Obstáculos Recortables para el Mapa Físico
+              </h2>
+            </div>
+            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748B' }}>Página 3 / 3 (Recortables)</span>
+          </div>
+
+          <p style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 600 }}>
+            Imprime esta hoja en papel o cartulina y recorta las fichas por la línea de puntos para colocarlas sobre el tablero 3x4 del robot TaleBot Pro.
+          </p>
+
+          {/* 4x3 Cut-out Grid */}
+          <div style={{
+            display: 'grid',
+            gridTemplateRows: 'repeat(4, 1fr)',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: '12px',
+            flex: 1,
+            margin: '0.5rem 0'
+          }}>
+            {OBSTACLE_TYPES.map((obs) => (
+              <div
+                key={obs.id}
+                style={{
+                  border: '2px dashed #94A3B8',
+                  borderRadius: '16px',
+                  padding: '0.8rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  textAlign: 'center',
+                  background: '#F8FAFC',
+                  position: 'relative'
+                }}
+              >
+                {/* Scissors Cut Icon Badge */}
+                <span style={{
+                  position: 'absolute',
+                  top: '4px',
+                  right: '6px',
+                  fontSize: '0.65rem',
+                  color: '#94A3B8'
+                }}>
+                  ✂️
+                </span>
+
+                <div style={{ fontSize: '2.8rem', filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.1))' }}>
+                  {obs.icon}
+                </div>
+
+                <div style={{ fontFamily: 'Fredoka', fontWeight: 700, fontSize: '0.95rem', color: '#0F172A', marginTop: '4px' }}>
+                  {obs.name}
+                </div>
+
+                <div style={{ fontSize: '0.68rem', color: '#64748B', marginTop: '2px', lineHeight: 1.2 }}>
+                  {obs.description}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{
+            fontSize: '0.75rem',
+            color: '#94A3B8',
+            textAlign: 'center',
+            borderTop: '1px solid #E2E8F0',
+            paddingTop: '0.4rem'
+          }}>
+            💡 Consejo: Puedes colocar a TaleBot las Alas 🪽 para sobrevolar el lago o los Brazos 🦾 para derribar muros.
+          </div>
         </div>
       </div>
     </div>
