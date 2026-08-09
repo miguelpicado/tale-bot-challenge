@@ -8,13 +8,14 @@ export const DIRECTIONS = [
 ];
 
 export const COMMAND_TYPES = {
-  FORWARD: { id: 'FORWARD', name: 'Avanzar', color: '#FFB703', textColor: '#000000', icon: '⬆️', ledColor: '#FFD166', key: '↑' },
-  BACKWARD: { id: 'BACKWARD', name: 'Retroceder', color: '#0284C7', textColor: '#FFFFFF', icon: '⬇️', ledColor: '#38BDF8', key: '↓' },
-  TURN_LEFT: { id: 'TURN_LEFT', name: 'Girar Izquierda', color: '#10B981', textColor: '#FFFFFF', icon: '↩️', ledColor: '#34D399', key: '←' },
-  TURN_RIGHT: { id: 'TURN_RIGHT', name: 'Girar Derecha', color: '#F43F5E', textColor: '#FFFFFF', icon: '↪️', ledColor: '#FB7185', key: '→' },
+  FORWARD: { id: 'FORWARD', name: 'Avanzar', color: '#10B981', textColor: '#FFFFFF', icon: '⬆️', ledColor: '#34D399', key: '↑' },
+  BACKWARD: { id: 'BACKWARD', name: 'Retroceder', color: '#EF4444', textColor: '#FFFFFF', icon: '⬇️', ledColor: '#F87171', key: '↓' },
+  TURN_LEFT: { id: 'TURN_LEFT', name: 'Girar Izquierda', color: '#FFC700', textColor: '#0F172A', icon: '↩️', ledColor: '#FFD166', key: '←' },
+  TURN_RIGHT: { id: 'TURN_RIGHT', name: 'Girar Derecha', color: '#00A3FF', textColor: '#FFFFFF', icon: '↪️', ledColor: '#38BDF8', key: '→' },
   DANCE: { id: 'DANCE', name: 'Bailar', color: '#8B5CF6', textColor: '#FFFFFF', icon: '💃', ledColor: '#A78BFA', key: 'B' },
-  SOUND: { id: 'SOUND', name: 'Sonido / Micro', color: '#EC4899', textColor: '#FFFFFF', icon: '🔊', ledColor: '#F472B6', key: 'M' },
-  LOOP: { id: 'LOOP', name: 'Bucle (Repetir)', color: '#FF6900', textColor: '#FFFFFF', icon: '🔁', ledColor: '#FF9500', key: 'L' },
+  SOUND: { id: 'SOUND', name: 'Sonido / Micro', color: '#06B6D4', textColor: '#FFFFFF', icon: '🔊', ledColor: '#22D3EE', key: 'M' },
+  LOOP: { id: 'LOOP', name: 'Bucle (Repetir)', color: '#84CC16', textColor: '#FFFFFF', icon: '🔁', ledColor: '#A3E635', key: 'L' },
+  CLEAR: { id: 'CLEAR', name: 'Borrar', color: '#FFFFFF', textColor: '#0F172A', icon: '🗑️', ledColor: '#FFFFFF', key: 'DEL' },
   PEN_DOWN: { id: 'PEN_DOWN', name: 'Bajar Rotulador', color: '#14B8A6', textColor: '#FFFFFF', icon: '🖊️', ledColor: '#2DD4BF', key: 'P' },
   PEN_UP: { id: 'PEN_UP', name: 'Subir Rotulador', color: '#64748B', textColor: '#FFFFFF', icon: '✍️', ledColor: '#94A3B8', key: 'U' },
 };
