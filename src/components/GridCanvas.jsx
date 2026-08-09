@@ -70,8 +70,11 @@ export default function GridCanvas({
           boxShadow: '0 20px 45px rgba(0, 0, 0, 0.08), 0 8px 20px rgba(255, 105, 0, 0.08)',
           border: '5px solid #FFFFFF',
           position: 'relative',
-          maxHeight: '100%',
+          width: '100%',
+          height: '100%',
           maxWidth: '100%',
+          maxHeight: '100%',
+          boxSizing: 'border-box',
           aspectRatio: `${numCols} / ${numRows}`,
           transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
         }}

@@ -252,20 +252,20 @@ export default function App() {
         maxWidth: '1440px',
         width: '100%',
         margin: '0 auto',
-        padding: '1rem 1.5rem',
+        padding: '0.6rem 1.2rem',
         flex: 1,
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
-        gap: '1rem',
+        gap: '0.8rem',
         boxSizing: 'border-box',
         overflow: 'hidden'
       }}>
         {/* Top Split Area: Maximum Hero Grid Map + Fluid Right Controller Sidebar */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: '1fr 440px',
-          gap: '1.4rem',
+          gridTemplateColumns: '1fr 400px',
+          gap: '1.2rem',
           alignItems: 'stretch',
           width: '100%',
           flex: 1,
