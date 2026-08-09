@@ -217,18 +217,20 @@ export default function GridCanvas({
                     />
                   )}
 
-                  {/* Contextual Popover Modal ALWAYS opening downwards, NO SCROLL, ALWAYS COMPLETE */}
+                  {/* Smart Popover Action Modal (Intelligent placement: opens UPWARDS on bottom rows, DOWNWARDS on top rows) */}
                   {isPopoverActive && (
                     <div 
                       onClick={(e) => e.stopPropagation()}
                       style={{
                         position: 'absolute',
-                        top: '105%', // ALWAYS OPEN DOWNWARDS
-                        bottom: 'auto',
+                        // Smart Vertical Placement: Open UPWARDS if on bottom half of grid, DOWNWARDS if on top half
+                        top: r >= Math.floor(numRows / 2) ? 'auto' : '105%',
+                        bottom: r >= Math.floor(numRows / 2) ? '105%' : 'auto',
+                        // Smart Horizontal Placement: Align LEFT on col 0, RIGHT on last col, CENTER on middle cols
                         left: c === 0 ? '0%' : c === numCols - 1 ? 'auto' : '50%',
                         right: c === numCols - 1 ? '0%' : 'auto',
                         transform: c !== 0 && c !== numCols - 1 ? 'translateX(-50%)' : 'none',
-                        zIndex: 9999,
+                        zIndex: 99999,
                         background: '#FFFFFF',
                         borderRadius: '24px',
                         padding: '0.85rem',
@@ -238,7 +240,7 @@ export default function GridCanvas({
                         flexDirection: 'column',
                         gap: '0.5rem',
                         width: '270px',
-                        overflow: 'visible' // NO SCROLLBAR, ALWAYS COMPLETE
+                        overflow: 'visible'
                       }}
                     >
                       {/* Popover Header */}
