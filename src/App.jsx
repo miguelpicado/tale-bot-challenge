@@ -232,7 +232,7 @@ export default function App() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ height: '100vh', maxMaxHeight: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* Header */}
       <Header
         orientation={orientation}
@@ -244,27 +244,32 @@ export default function App() {
         activeModeName={activeModeName}
       />
 
-      {/* Main Hero Workspace */}
+      {/* Main Hero Workspace - Fits 16:9 Screen without Vertical Scroll */}
       <main style={{
         maxWidth: '1440px',
         width: '100%',
         margin: '0 auto',
-        padding: '1.5rem',
+        padding: '0.8rem 1.5rem',
         flex: 1,
         display: 'flex',
         flexDirection: 'column',
-        gap: '1.8rem'
+        justifyContent: 'space-between',
+        gap: '0.8rem',
+        overflow: 'hidden'
       }}>
-        {/* Top Split Area: Prominent Grid Canvas + Right Controller Sidebar */}
+        {/* Top Split Area: Proportionally sized Map + Wider 500px Sidebar */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: '1fr 440px',
-          gap: '1.8rem',
-          alignItems: 'start',
-          width: '100%'
+          gridTemplateColumns: '1fr 500px', // Wider sidebar, proportionally smaller map
+          gap: '1.4rem',
+          alignItems: 'center',
+          width: '100%',
+          flex: 1,
+          maxHeight: 'calc(100vh - 180px)',
+          overflow: 'hidden'
         }}>
           {/* Hero Grid Canvas */}
-          <section style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', width: '100%' }}>
+          <section style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
             <GridCanvas
               numRows={numRows}
               numCols={numCols}
@@ -281,8 +286,8 @@ export default function App() {
             />
           </section>
 
-          {/* Right Controller Sidebar */}
-          <aside style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+          {/* Right Controller Sidebar (500px wide, fits nicely) */}
+          <aside style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', width: '100%', maxHeight: '100%', overflowY: 'auto' }}>
             <TaleBotController
               commands={currentChallenge.commands || []}
               onAddCommand={handleAddCommand}
@@ -304,7 +309,7 @@ export default function App() {
           </aside>
         </div>
 
-        {/* FULL WIDTH Command Sequence Bar spanning under BOTH the Map AND the Sidebar! */}
+        {/* FULL WIDTH Command Sequence Bar aligned under BOTH map and sidebar */}
         <CommandSequenceBar
           commands={currentChallenge.commands || []}
           isPlaying={isPlaying}
