@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import Header from './components/Header';
 import GridCanvas from './components/GridCanvas';
+import CommandSequenceBar from './components/CommandSequenceBar';
 import TaleBotController from './components/TaleBotController';
 import ChallengeEditorModal from './components/ChallengeEditorModal';
 import PrintSheetPreview from './components/PrintSheetPreview';
@@ -208,7 +209,6 @@ export default function App() {
     }, 550);
   };
 
-  // Autogenerate A4 Pages from NewChallengeModal
   const handleGenerateA4Pages = (generatedList) => {
     if (generatedList.length >= 2) {
       setChallenge1(generatedList[0]);
@@ -252,12 +252,13 @@ export default function App() {
         padding: '1.5rem',
         flex: 1,
         display: 'grid',
-        gridTemplateColumns: '1fr 440px', // Wider right sidebar (440px)
+        gridTemplateColumns: '1fr 440px',
         gap: '1.8rem',
         alignItems: 'start'
       }}>
-        {/* Left Hero Column: Prominent 3x4 Grid Map Canvas */}
-        <section style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem', alignItems: 'center' }}>
+        {/* Left Hero Column: Prominent 3x4 Grid Map Canvas & Full-Width Command Sequence Bar */}
+        <section style={{ display: 'flex', flexDirection: 'column', gap: '1.4rem', alignItems: 'center' }}>
+          {/* Prominent Grid Canvas */}
           <GridCanvas
             numRows={numRows}
             numCols={numCols}
@@ -272,6 +273,13 @@ export default function App() {
             onToggleObstacle={handleToggleObstacle}
             onClearCell={handleClearCell}
           />
+
+          {/* Full-Width Programmed Command Sequence Bar directly under Map */}
+          <CommandSequenceBar
+            commands={currentChallenge.commands || []}
+            isPlaying={isPlaying}
+            currentStep={currentStep}
+          />
         </section>
 
         {/* Right Sidebar: Spacious TaleBot Controller & Shape Drawer (If active) */}
@@ -285,7 +293,6 @@ export default function App() {
             onRunSimulation={handleRunSimulation}
             onAutoSolvePath={handleAutoSolvePath}
             isPlaying={isPlaying}
-            currentStep={currentStep}
             penMarkerActive={currentChallenge.penMarkerMode}
             onTogglePenMarker={() => setCurrentChallenge({
               ...currentChallenge,

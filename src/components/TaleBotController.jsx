@@ -10,7 +10,6 @@ export default function TaleBotController({
   onRunSimulation,
   onAutoSolvePath,
   isPlaying = false,
-  currentStep = 0,
   penMarkerActive = false,
   onTogglePenMarker
 }) {
@@ -90,40 +89,9 @@ export default function TaleBotController({
             Mando TaleBot Pro
           </h3>
         </div>
-
-        {/* LED Lights sequence bar */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          background: '#0F172A',
-          padding: '6px 14px',
-          borderRadius: '20px'
-        }}>
-          {commands.length === 0 ? (
-            <span style={{ color: '#64748B', fontSize: '0.75rem', fontWeight: 800 }}>LEDS LISTOS</span>
-          ) : (
-            commands.slice(Math.max(0, commands.length - 8)).map((cmd, idx) => {
-              const cmdInfo = COMMAND_TYPES[cmd.id] || COMMAND_TYPES.FORWARD;
-              return (
-                <div 
-                  key={idx}
-                  style={{
-                    width: '12px',
-                    height: '12px',
-                    borderRadius: '50%',
-                    background: cmdInfo.ledColor,
-                    boxShadow: `0 0 8px ${cmdInfo.ledColor}`
-                  }}
-                  title={cmdInfo.name}
-                />
-              );
-            })
-          )}
-        </div>
       </div>
 
-      {/* Hardware Buttons Deck (Wider & Spacious) */}
+      {/* Hardware Buttons Deck */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(4, 1fr)',
@@ -256,72 +224,6 @@ export default function TaleBotController({
           <PenTool size={24} />
           <span>{penMarkerActive ? 'Bajar Pen' : 'Subir Pen'}</span>
         </button>
-      </div>
-
-      {/* Programmed Sequence Queue Strip */}
-      <div style={{
-        background: '#F8FAFC',
-        borderRadius: '16px',
-        padding: '0.9rem',
-        minHeight: '68px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.6rem',
-        overflowX: 'auto',
-        border: '2px inset #E2E8F0'
-      }}>
-        {commands.length === 0 ? (
-          <div style={{
-            width: '100%',
-            textAlign: 'center',
-            color: '#94A3B8',
-            fontSize: '0.9rem',
-            fontWeight: 700
-          }}>
-            Pulsa los botones para añadir comandos de movimiento...
-          </div>
-        ) : (
-          commands.map((cmd, idx) => {
-            const cmdInfo = COMMAND_TYPES[cmd.id] || COMMAND_TYPES.FORWARD;
-            const isStepActive = isPlaying && currentStep === idx + 1;
-
-            return (
-              <div
-                key={idx}
-                style={{
-                  background: cmdInfo.color,
-                  color: cmdInfo.textColor,
-                  padding: '0.45rem 0.8rem',
-                  borderRadius: '12px',
-                  fontWeight: 800,
-                  fontSize: '0.85rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.4rem',
-                  whiteSpace: 'nowrap',
-                  boxShadow: isStepActive ? `0 0 14px ${cmdInfo.color}` : '0 2px 5px rgba(0,0,0,0.1)',
-                  transform: isStepActive ? 'scale(1.15)' : 'scale(1)',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                <span style={{
-                  background: 'rgba(0,0,0,0.2)',
-                  borderRadius: '50%',
-                  width: '20px',
-                  height: '20px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '0.7rem'
-                }}>
-                  {idx + 1}
-                </span>
-                <span>{cmdInfo.icon}</span>
-                <span>{cmdInfo.name}</span>
-              </div>
-            );
-          })
-        )}
       </div>
 
       {/* Controller Actions Bottom Bar */}
