@@ -10,7 +10,7 @@ import { X, Eraser } from 'lucide-react';
 const GAP = 7;
 
 /** Meta: plataforma de aterrizaje con estrella, con un pulso que la señala. */
-function GoalMarker({ size }) {
+export function GoalMarker({ size }) {
   return (
     <svg
       className="goal"
@@ -53,7 +53,8 @@ export default function GridCanvas({
   onSetStartPos,
   onSetTargetPos,
   onToggleObstacle,
-  onClearCell
+  onClearCell,
+  onBoardWidth
 }) {
   const theme = MAP_THEMES[themeKey] || MAP_THEMES.CLASICO;
 
@@ -73,6 +74,20 @@ export default function GridCanvas({
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
+
+  // El ancho del tablero sale de su alto y de la proporción, así que solo se
+  // conoce ya medido. Lo publicamos para que la columna se ajuste a él y la
+  // sidebar quede pegada al mapa.
+  const stageRef = useRef(null);
+  useEffect(() => {
+    const el = stageRef.current;
+    if (!el || !onBoardWidth) return;
+    const ro = new ResizeObserver(([entry]) => {
+      onBoardWidth(Math.round(entry.contentRect.width) + 28); // + padding del chasis
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [onBoardWidth]);
 
   const cellW = area.w > 0 ? (area.w - (numCols - 1) * GAP) / numCols : 0;
   const cellH = area.h > 0 ? (area.h - (numRows - 1) * GAP) / numRows : 0;
@@ -166,7 +181,17 @@ export default function GridCanvas({
       ref={containerRef}
       style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', minHeight: 0 }}
     >
-      <div className="stage" style={{ aspectRatio: `${numCols} / ${numRows}` }}>
+      <div
+        ref={stageRef}
+        className="stage"
+        style={{
+          aspectRatio: `${numCols} / ${numRows}`,
+          height: '100%',
+          width: 'auto',
+          maxWidth: '100%',
+          maxHeight: '100%'
+        }}
+      >
         <div
           ref={matRef}
           className="mat"

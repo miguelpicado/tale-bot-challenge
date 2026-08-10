@@ -352,32 +352,49 @@ button:disabled { cursor: not-allowed; opacity: .42; }
   flex: 1;
   min-height: 0;
   width: 100%;
-  max-width: 1480px;
+  max-width: 100%;
   margin: 0 auto;
-  padding: .85rem 1.25rem 1rem;
+  padding: .6rem 1.2rem .8rem;
   display: flex;
   flex-direction: column;
-  gap: .85rem;
+  gap: .6rem;
 }
 
+/* La columna del tablero se encoge hasta el ancho real del tablero, así la
+   sidebar queda pegada a él y la barra de secuencia mide lo mismo que el mapa */
 .workspace {
   flex: 1;
   min-height: 0;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 348px;
-  gap: 1.1rem;
+  display: flex;
+  justify-content: center;
   align-items: stretch;
+  gap: .6rem;
+}
+
+.workspace__main {
+  display: flex;
+  flex-direction: column;
+  gap: .6rem;
+  min-height: 0;
+  min-width: 0;
+  flex: 0 1 auto;
 }
 
 .workspace__stage {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 0;
   min-width: 0;
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
 }
 
 .rail {
+  flex: 0 0 350px;
   display: flex;
   flex-direction: column;
   gap: .8rem;
@@ -416,8 +433,10 @@ button:disabled { cursor: not-allowed; opacity: .42; }
 .stage {
   container-type: inline-size;
   position: relative;
-  width: 100%;
+  /* El alto manda y el ancho sale de la proporción del tablero: así el bloque
+     mide lo que mide el mapa y no deja hueco muerto a su derecha */
   height: 100%;
+  width: auto;
   max-width: 100%;
   max-height: 100%;
   padding: 14px;
@@ -739,7 +758,7 @@ button:disabled { cursor: not-allowed; opacity: .42; }
    Cinta de secuencia
    ============================================================ */
 
-.tape { display: flex; flex-direction: column; gap: .6rem; padding: .8rem 1rem; }
+.tape { display: flex; flex-direction: column; gap: .6rem; padding: .8rem 1rem; width: 100%; box-sizing: border-box; }
 
 .tape__head {
   display: flex;
@@ -753,11 +772,11 @@ button:disabled { cursor: not-allowed; opacity: .42; }
 .leds {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 18px;
   flex: 1;
   min-width: 0;
-  min-height: 52px;
-  padding: 8px 18px;
+  min-height: 70px;
+  padding: 10px 22px;
   border-radius: var(--r-lg);
   background: var(--ink);
   box-shadow: inset 0 2px 6px rgba(0, 0, 0, .55);
@@ -768,8 +787,8 @@ button:disabled { cursor: not-allowed; opacity: .42; }
 
 .led {
   flex: none;
-  width: 30px;
-  height: 30px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   background:
     radial-gradient(circle at 34% 30%, rgba(255, 255, 255, .75), transparent 46%),
@@ -1091,15 +1110,28 @@ button:disabled { cursor: not-allowed; opacity: .42; }
    Vista previa de impresión
    ============================================================ */
 
-.preview { display: flex; gap: 1.25rem; justify-content: center; align-items: center; flex: 1; min-height: 0; flex-wrap: wrap; }
+.preview {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+  align-items: flex-start;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.8rem 1rem;
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+}
 
 .a4 {
-  width: 330px;
-  height: 466px;
-  padding: 14px;
+  width: 450px;
+  max-width: 100%;
+  height: 620px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   background: #FFF;
   border-radius: var(--r-md);
   box-shadow: var(--sh-4);
@@ -1135,6 +1167,11 @@ button:disabled { cursor: not-allowed; opacity: .42; }
 .only-print { display: none !important; }
 
 @media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
   html, body, #root, main, section, aside {
     height: auto !important;
     min-height: 0 !important;
@@ -1168,11 +1205,12 @@ button:disabled { cursor: not-allowed; opacity: .42; }
     break-after: page !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
-    padding: 15mm !important;
+    padding: 16mm 18mm 16mm 18mm !important;
     box-sizing: border-box !important;
     display: flex !important;
     flex-direction: column !important;
-    justify-content: space-between !important;
+    justify-content: flex-start !important;
+    gap: 8mm !important;
     background: white !important;
     box-shadow: none !important;
     border-radius: 0 !important;

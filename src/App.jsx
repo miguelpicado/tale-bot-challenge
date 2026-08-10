@@ -12,6 +12,7 @@ import GoogleDriveModal from './components/GoogleDriveModal';
 import NewChallengeModal from './components/NewChallengeModal';
 import SavePrintModal from './components/SavePrintModal';
 import ShapeCatalogDrawer from './components/ShapeCatalogDrawer';
+import ChallengeSidebarPanel from './components/ChallengeSidebarPanel';
 
 import { PRESET_CHALLENGES } from './utils/presets';
 import { simulatePath, solveNavigationPath, durationOf, COMMAND_TYPES } from './utils/talebotEngine';
@@ -33,18 +34,43 @@ export default function App() {
   const numRows = orientation === 'landscape' ? 4 : 5;
   const numCols = orientation === 'landscape' ? 5 : 4;
 
-  // Active A4 Sheet Slot (1 or 2)
+  // Active A4 Sheet Slot (1 or 2) and Page Index
   const [activeSlot, setActiveSlot] = useState(1);
+  const [activePageIndex, setActivePageIndex] = useState(0);
 
   // Challenges for Slot 1 and Slot 2
   const [challenge1, setChallenge1] = useState(PRESET_CHALLENGES[0]);
   const [challenge2, setChallenge2] = useState(PRESET_CHALLENGES[1]);
+  const [generatedChallengesList, setGeneratedChallengesList] = useState([]);
 
-  const currentChallenge = activeSlot === 1 ? challenge1 : challenge2;
+  const totalPageCount = (generatedChallengesList && generatedChallengesList.length > 0)
+    ? Math.max(1, Math.ceil(generatedChallengesList.length / 2))
+    : 1;
+
+  const activeChallengeIndex = activePageIndex * 2 + (activeSlot - 1);
+  const currentChallenge = (generatedChallengesList && generatedChallengesList.length > 0 && generatedChallengesList[activeChallengeIndex])
+    ? generatedChallengesList[activeChallengeIndex]
+    : (activeSlot === 1 ? challenge1 : challenge2);
+
   const setCurrentChallenge = (updated) => {
-    if (activeSlot === 1) setChallenge1(updated);
-    else setChallenge2(updated);
+    if (generatedChallengesList && generatedChallengesList.length > 0) {
+      const listCopy = [...generatedChallengesList];
+      const targetIdx = activePageIndex * 2 + (activeSlot - 1);
+      listCopy[targetIdx] = updated;
+      setGeneratedChallengesList(listCopy);
+      if (activePageIndex === 0) {
+        if (activeSlot === 1) setChallenge1(updated);
+        else setChallenge2(updated);
+      }
+    } else {
+      if (activeSlot === 1) setChallenge1(updated);
+      else setChallenge2(updated);
+    }
   };
+
+  // Ancho real del tablero: lo publica GridCanvas ya medido y con él ajustamos
+  // la columna, de forma que la sidebar quede pegada al mapa
+  const [boardWidth, setBoardWidth] = useState(null);
 
   // Active Mode Name Badge
   const [activeModeName, setActiveModeName] = useState('Navegación con obstáculos');
@@ -247,11 +273,11 @@ export default function App() {
     advance(0);
   };
 
-  const [generatedChallengesList, setGeneratedChallengesList] = useState([]);
-
   const handleGenerateA4Pages = (generatedList) => {
     if (generatedList.length >= 2) {
       setGeneratedChallengesList(generatedList);
+      setActivePageIndex(0);
+      setActiveSlot(1);
       setChallenge1(generatedList[0]);
       setChallenge2(generatedList[1]);
       setActiveModeName(`Fichas generadas · ${generatedList.length} retos`);
@@ -275,35 +301,53 @@ export default function App() {
   return (
     <div className="app">
       <Header
-        orientation={orientation}
-        onToggleOrientation={handleToggleOrientation}
         onOpenNewChallengeModal={() => setShowNewChallengeModal(true)}
         onOpenSavePrintModal={() => setShowSavePrintModal(true)}
         onOpenLibrary={() => setShowLibrary(true)}
-        onOpenChallengeEditorModal={() => setShowChallengeEditorModal(true)}
         activeModeName={activeModeName}
       />
 
-      <main className="work">
+      <main className="work no-print">
         <div className="workspace">
-          <section className="workspace__stage">
-            <GridCanvas
-              numRows={numRows}
-              numCols={numCols}
-              themeKey={currentChallenge.theme || 'CLASICO'}
-              startPos={currentChallenge.start}
-              targetPos={currentChallenge.target}
-              obstacles={currentChallenge.obstacles || []}
-              currentRobotState={robotSimState}
-              penLines={activePenLines}
-              onSetStartPos={handleSetStartPos}
-              onSetTargetPos={handleSetTargetPos}
-              onToggleObstacle={handleToggleObstacle}
-              onClearCell={handleClearCell}
+          <div className="workspace__main" style={boardWidth ? { width: boardWidth } : undefined}>
+            <section className="workspace__stage">
+              <GridCanvas
+                numRows={numRows}
+                numCols={numCols}
+                themeKey={currentChallenge.theme || 'CLASICO'}
+                startPos={currentChallenge.start}
+                targetPos={currentChallenge.target}
+                obstacles={currentChallenge.obstacles || []}
+                currentRobotState={robotSimState}
+                penLines={activePenLines}
+                onSetStartPos={handleSetStartPos}
+                onSetTargetPos={handleSetTargetPos}
+                onToggleObstacle={handleToggleObstacle}
+                onClearCell={handleClearCell}
+                onBoardWidth={setBoardWidth}
+              />
+            </section>
+
+            <CommandSequenceBar
+              commands={currentChallenge.commands || []}
+              isPlaying={isPlaying}
+              currentStep={currentStep}
             />
-          </section>
+          </div>
 
           <aside className="rail">
+            <ChallengeSidebarPanel
+              currentSlot={activeSlot}
+              onAssignToSlot={setActiveSlot}
+              pageIndex={activePageIndex}
+              totalPages={totalPageCount}
+              onPageChange={setActivePageIndex}
+              challenge={currentChallenge}
+              onChangeChallenge={setCurrentChallenge}
+              orientation={orientation}
+              onToggleOrientation={handleToggleOrientation}
+            />
+
             <TaleBotController
               commands={currentChallenge.commands || []}
               onAddCommand={handleAddCommand}
@@ -319,12 +363,6 @@ export default function App() {
             )}
           </aside>
         </div>
-
-        <CommandSequenceBar
-          commands={currentChallenge.commands || []}
-          isPlaying={isPlaying}
-          currentStep={currentStep}
-        />
       </main>
 
       {toast && (

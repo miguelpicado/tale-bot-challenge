@@ -1,17 +1,12 @@
-import { Sparkles, FolderOpen, Pencil, Printer } from 'lucide-react';
+import { Sparkles, FolderOpen, Printer } from 'lucide-react';
 import TaleBotAvatar from './TaleBotAvatar';
 
 export default function Header({
-  orientation,
-  onToggleOrientation,
   onOpenNewChallengeModal,
   onOpenSavePrintModal,
   onOpenLibrary,
-  onOpenChallengeEditorModal,
   activeModeName = 'Reto personalizado'
 }) {
-  const isLandscape = orientation === 'landscape';
-
   return (
     <header className="topbar no-print">
       <div className="brand">
@@ -31,32 +26,8 @@ export default function Header({
       </div>
 
       <div className="topbar__actions">
-        {/* La orientación es una elección entre dos estados: control segmentado, no un botón que alterna a ciegas */}
-        <div className="seg" role="group" aria-label="Orientación del tablero">
-          <button
-            className="seg__opt"
-            data-on={isLandscape}
-            onClick={() => { if (!isLandscape) onToggleOrientation(); }}
-          >
-            <span className="t-mono" style={{ fontSize: '.7rem' }}>5×4</span> Horizontal
-          </button>
-          <button
-            className="seg__opt"
-            data-on={!isLandscape}
-            onClick={() => { if (isLandscape) onToggleOrientation(); }}
-          >
-            <span className="t-mono" style={{ fontSize: '.7rem' }}>4×5</span> Vertical
-          </button>
-        </div>
-
-        <span className="topbar__sep" />
-
         <button className="btn btn--quiet" onClick={onOpenNewChallengeModal}>
           <Sparkles size={15} /> Generar retos
-        </button>
-
-        <button className="btn btn--quiet" onClick={onOpenChallengeEditorModal}>
-          <Pencil size={15} /> Editar ficha
         </button>
 
         <button className="btn btn--quiet" onClick={onOpenLibrary}>

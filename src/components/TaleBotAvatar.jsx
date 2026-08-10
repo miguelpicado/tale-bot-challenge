@@ -20,16 +20,16 @@ export default function TaleBotAvatar({
         <defs>
           <linearGradient id="tbShell" x1="34" y1="12" x2="86" y2="108" gradientUnits="userSpaceOnUse">
             <stop stopColor="#FFFFFF" />
-            <stop offset="1" stopColor="#EFEAE3" />
+            <stop offset="1" stopColor="#FAFAFA" />
           </linearGradient>
           <radialGradient id="tbEye" cx="0.38" cy="0.3" r="0.8">
-            <stop stopColor="#4A4741" />
+            <stop stopColor="#3A3731" />
             <stop offset="1" stopColor="#17140F" />
           </radialGradient>
         </defs>
 
         {/* Sombra proyectada */}
-        <rect x="16" y="20" width="88" height="88" rx="34" fill="rgba(26,20,16,.22)" />
+        <rect x="16" y="20" width="88" height="88" rx="34" fill="rgba(26,20,16,.08)" />
 
         {/* Alas y brazos de clip, cuando el reto los pide */}
         {hasWings && (
@@ -49,9 +49,9 @@ export default function TaleBotAvatar({
         <rect x="1" y="34" width="26" height="52" rx="13" fill={wheelColor} />
         <rect x="93" y="34" width="26" height="52" rx="13" fill={wheelColor} />
 
-        {/* Carcasa */}
-        <rect x="19" y="15" width="82" height="90" rx="33" fill="url(#tbShell)" />
-        <rect x="20" y="16" width="80" height="88" rx="32" fill="none" stroke="#DCD5CA" strokeWidth="2" />
+        {/* Carcasa blanca pura */}
+        <rect x="19" y="15" width="82" height="90" rx="33" fill="#FFFFFF" />
+        <rect x="20" y="16" width="80" height="88" rx="32" fill="none" stroke="#CBD2D9" strokeWidth="2.5" />
 
         {/* Ojos: van delante y son lo que marca hacia dónde mira */}
         <ellipse cx="45" cy="33" rx="12" ry="10.5" fill="#E4DED4" />
