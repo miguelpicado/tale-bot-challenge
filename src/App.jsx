@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import confetti from 'canvas-confetti';
 import { Check, AlertTriangle } from 'lucide-react';
 import Header from './components/Header';
 import GridCanvas from './components/GridCanvas';
 import CommandSequenceBar from './components/CommandSequenceBar';
 import TaleBotController from './components/TaleBotController';
-import ChallengeEditorModal from './components/ChallengeEditorModal';
 import PrintSheetPreview from './components/PrintSheetPreview';
 import SavedLibraryModal from './components/SavedLibraryModal';
 import GoogleDriveModal from './components/GoogleDriveModal';
@@ -93,7 +92,6 @@ export default function App() {
   // Modals state
   const [showNewChallengeModal, setShowNewChallengeModal] = useState(false);
   const [showSavePrintModal, setShowSavePrintModal] = useState(false);
-  const [showChallengeEditorModal, setShowChallengeEditorModal] = useState(false);
   const [showPrintPreview, setShowPrintPreview] = useState(false);
   const [showLibrary, setShowLibrary] = useState(false);
   const [showDriveModal, setShowDriveModal] = useState(false);
@@ -419,16 +417,6 @@ export default function App() {
             setActiveModeName('Dibujo con rotulador');
           }}
           onClose={() => setShowNewChallengeModal(false)}
-        />
-      )}
-
-      {showChallengeEditorModal && (
-        <ChallengeEditorModal
-          challenge={currentChallenge}
-          onChangeChallenge={setCurrentChallenge}
-          onAssignToSlot={setActiveSlot}
-          currentSlot={activeSlot}
-          onClose={() => setShowChallengeEditorModal(false)}
         />
       )}
 

@@ -44,7 +44,7 @@ export function importChallengesFromJSON(file) {
       try {
         const json = JSON.parse(event.target.result);
         resolve(json);
-      } catch (e) {
+      } catch {
         reject(new Error('Formato de archivo JSON inválido'));
       }
     };
