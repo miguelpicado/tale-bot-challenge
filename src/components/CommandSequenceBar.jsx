@@ -7,7 +7,7 @@ export default function CommandSequenceBar({
   isPlaying = false,
   currentStep = 0
 }) {
-  const [showSteps, setShowSteps] = useState(true);
+  const [showSteps, setShowSteps] = useState(false);
 
   return (
     <div className="panel tape no-print">

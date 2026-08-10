@@ -11,8 +11,8 @@ import SavedLibraryModal from './components/SavedLibraryModal';
 import GoogleDriveModal from './components/GoogleDriveModal';
 import NewChallengeModal from './components/NewChallengeModal';
 import SavePrintModal from './components/SavePrintModal';
-import ShapeCatalogDrawer from './components/ShapeCatalogDrawer';
 import ChallengeSidebarPanel from './components/ChallengeSidebarPanel';
+import ShapeCatalogModal from './components/ShapeCatalogModal';
 
 import { PRESET_CHALLENGES } from './utils/presets';
 import { simulatePath, solveNavigationPath, durationOf, COMMAND_TYPES } from './utils/talebotEngine';
@@ -74,10 +74,15 @@ export default function App() {
 
   // Active Mode Name Badge
   const [activeModeName, setActiveModeName] = useState('Navegación con obstáculos');
-  const [isDrawingMode, setIsDrawingMode] = useState(false);
 
   // Saved challenges in LocalStorage
   const [savedChallenges, setSavedChallenges] = useState([]);
+
+  // Rotuladores de las ruedas (Izquierdo y Derecho)
+  const [leftPenEnabled, setLeftPenEnabled] = useState(true);
+  const [leftPenColor, setLeftPenColor] = useState('#6D4C41'); // Marrón por defecto
+  const [rightPenEnabled, setRightPenEnabled] = useState(true);
+  const [rightPenColor, setRightPenColor] = useState('#2E7D32'); // Verde por defecto
 
   // Live simulation playback
   const [isPlaying, setIsPlaying] = useState(false);
@@ -92,6 +97,7 @@ export default function App() {
   const [showPrintPreview, setShowPrintPreview] = useState(false);
   const [showLibrary, setShowLibrary] = useState(false);
   const [showDriveModal, setShowDriveModal] = useState(false);
+  const [showShapeCatalogModal, setShowShapeCatalogModal] = useState(false);
 
   // Load saved challenges from LocalStorage on mount
   useEffect(() => {
@@ -251,12 +257,18 @@ export default function App() {
     // un compás. El robot recibe su duración para animar con la misma cadencia.
     const advance = (step) => {
       if (step >= trajectory.length) {
-        playTimer.current = null;
-        setIsPlaying(false);
         const lastPos = trajectory[trajectory.length - 1];
-        if (lastPos.r === currentChallenge.target.r && lastPos.c === currentChallenge.target.c) {
+        if (lastPos && lastPos.r === currentChallenge.target.r && lastPos.c === currentChallenge.target.c) {
           confetti({ particleCount: 120, spread: 80, origin: { y: 0.5 } });
         }
+
+        // El baile/paso final dura 2 segundos (2000ms), luego vuelve al inicio
+        playTimer.current = setTimeout(() => {
+          playTimer.current = null;
+          setIsPlaying(false);
+          setRobotSimState(null); // Vuelve al inicio (startPos)
+          setCurrentStep(0);
+        }, 2000);
         return;
       }
 
@@ -298,9 +310,24 @@ export default function App() {
     });
   };
 
+  const displayPenLines = isPlaying
+    ? activePenLines
+    : (currentChallenge.penMarkerMode || (currentChallenge.commands && currentChallenge.commands.some(c => c.id === 'PEN_DOWN')))
+      ? simulatePath(
+          currentChallenge.start || { r: numRows - 1, c: 0, dir: 0 },
+          currentChallenge.commands || [],
+          numRows,
+          numCols
+        ).penLines
+      : [];
+
   return (
     <div className="app">
       <Header
+        orientation={orientation}
+        onToggleOrientation={handleToggleOrientation}
+        themeKey={currentChallenge.theme || 'CLASICO'}
+        onChangeTheme={(thm) => setCurrentChallenge({ ...currentChallenge, theme: thm })}
         onOpenNewChallengeModal={() => setShowNewChallengeModal(true)}
         onOpenSavePrintModal={() => setShowSavePrintModal(true)}
         onOpenLibrary={() => setShowLibrary(true)}
@@ -319,7 +346,11 @@ export default function App() {
                 targetPos={currentChallenge.target}
                 obstacles={currentChallenge.obstacles || []}
                 currentRobotState={robotSimState}
-                penLines={activePenLines}
+                penLines={displayPenLines}
+                leftPenEnabled={leftPenEnabled}
+                leftPenColor={leftPenColor}
+                rightPenEnabled={rightPenEnabled}
+                rightPenColor={rightPenColor}
                 onSetStartPos={handleSetStartPos}
                 onSetTargetPos={handleSetTargetPos}
                 onToggleObstacle={handleToggleObstacle}
@@ -336,18 +367,7 @@ export default function App() {
           </div>
 
           <aside className="rail">
-            <ChallengeSidebarPanel
-              currentSlot={activeSlot}
-              onAssignToSlot={setActiveSlot}
-              pageIndex={activePageIndex}
-              totalPages={totalPageCount}
-              onPageChange={setActivePageIndex}
-              challenge={currentChallenge}
-              onChangeChallenge={setCurrentChallenge}
-              orientation={orientation}
-              onToggleOrientation={handleToggleOrientation}
-            />
-
+            {/* Mando arriba */}
             <TaleBotController
               commands={currentChallenge.commands || []}
               onAddCommand={handleAddCommand}
@@ -358,9 +378,25 @@ export default function App() {
               isPlaying={isPlaying}
             />
 
-            {isDrawingMode && (
-              <ShapeCatalogDrawer onSelectShape={handleSelectShapeFromDrawer} />
-            )}
+            {/* Ficha abajo */}
+            <ChallengeSidebarPanel
+              currentSlot={activeSlot}
+              onAssignToSlot={setActiveSlot}
+              pageIndex={activePageIndex}
+              totalPages={totalPageCount}
+              onPageChange={setActivePageIndex}
+              challenge={currentChallenge}
+              onChangeChallenge={setCurrentChallenge}
+              onOpenShapesModal={() => setShowShapeCatalogModal(true)}
+              leftPenEnabled={leftPenEnabled}
+              onToggleLeftPen={setLeftPenEnabled}
+              leftPenColor={leftPenColor}
+              onChangeLeftPenColor={setLeftPenColor}
+              rightPenEnabled={rightPenEnabled}
+              onToggleRightPen={setRightPenEnabled}
+              rightPenColor={rightPenColor}
+              onChangeRightPenColor={setRightPenColor}
+            />
           </aside>
         </div>
       </main>
@@ -379,7 +415,7 @@ export default function App() {
           numCols={numCols}
           onGenerateA4Pages={handleGenerateA4Pages}
           onOpenShapesMode={() => {
-            setIsDrawingMode(true);
+            setShowShapeCatalogModal(true);
             setActiveModeName('Dibujo con rotulador');
           }}
           onClose={() => setShowNewChallengeModal(false)}
@@ -410,6 +446,10 @@ export default function App() {
           challengesList={generatedChallengesList}
           challenge1={challenge1}
           challenge2={challenge2}
+          leftPenEnabled={leftPenEnabled}
+          leftPenColor={leftPenColor}
+          rightPenEnabled={rightPenEnabled}
+          rightPenColor={rightPenColor}
           onClose={() => setShowPrintPreview(false)}
         />
       )}
@@ -440,6 +480,14 @@ export default function App() {
         <GoogleDriveModal
           challenges={[challenge1, challenge2, ...savedChallenges]}
           onClose={() => setShowDriveModal(false)}
+        />
+      )}
+
+      {showShapeCatalogModal && (
+        <ShapeCatalogModal
+          onSelectShape={handleSelectShapeFromDrawer}
+          onGenerateShapePages={handleGenerateA4Pages}
+          onClose={() => setShowShapeCatalogModal(false)}
         />
       )}
     </div>

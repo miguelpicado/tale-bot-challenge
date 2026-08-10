@@ -50,6 +50,10 @@ export default function GridCanvas({
   penLines = [],
   hasWings = false,
   hasArms = false,
+  leftPenEnabled = true,
+  leftPenColor = '#6D4C41',
+  rightPenEnabled = true,
+  rightPenColor = '#2E7D32',
   onSetStartPos,
   onSetTargetPos,
   onToggleObstacle,
@@ -60,20 +64,7 @@ export default function GridCanvas({
 
   const [activePopoverCell, setActivePopoverCell] = useState(null);
   const containerRef = useRef(null);
-
-  // Medimos el área útil de la rejilla para trazar el recorrido en píxeles
   const matRef = useRef(null);
-  const [area, setArea] = useState({ w: 0, h: 0 });
-  useEffect(() => {
-    const el = matRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver(([entry]) => {
-      const { width, height } = entry.contentRect;
-      setArea({ w: width, h: height });
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
 
   // El ancho del tablero sale de su alto y de la proporción, así que solo se
   // conoce ya medido. Lo publicamos para que la columna se ajuste a él y la
@@ -89,10 +80,7 @@ export default function GridCanvas({
     return () => ro.disconnect();
   }, [onBoardWidth]);
 
-  const cellW = area.w > 0 ? (area.w - (numCols - 1) * GAP) / numCols : 0;
-  const cellH = area.h > 0 ? (area.h - (numRows - 1) * GAP) / numRows : 0;
-  const centerX = (c) => c * (cellW + GAP) + cellW / 2;
-  const centerY = (r) => r * (cellH + GAP) + cellH / 2;
+
 
   const activeRobotR = currentRobotState ? currentRobotState.r : startPos.r;
   const activeRobotC = currentRobotState ? currentRobotState.c : startPos.c;
@@ -201,18 +189,151 @@ export default function GridCanvas({
             gridTemplateColumns: `repeat(${numCols}, 1fr)`
           }}
         >
-          {/* Trazo del rotulador, de centro a centro de casilla */}
-          {penLines && penLines.length > 0 && cellW > 0 && (
-            <svg className="trace" style={{ left: GAP, top: GAP, width: area.w, height: area.h }}>
-              {penLines.map((line, idx) => (
-                <line
-                  key={idx}
-                  x1={centerX(line.from.c)}
-                  y1={centerY(line.from.r)}
-                  x2={centerX(line.to.c)}
-                  y2={centerY(line.to.r)}
-                />
-              ))}
+          {/* Trazo del rotulador o Recorrido de navegación */}
+          {penLines && penLines.length > 0 && (
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="trace" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 15 }}>
+              {/* Si ambos rotuladores están desactivados: Recorrido central en negro continuo (sin arcos de giro) */}
+              {!leftPenEnabled && !rightPenEnabled && penLines.map((line, idx) => {
+                if (line.type === 'ARC') return null; // El recorrido no lleva radio de giro
+                return (
+                  <line
+                    key={`black_line_${idx}`}
+                    x1={((line.from.c + 0.5) / numCols) * 100}
+                    y1={((line.from.r + 0.5) / numRows) * 100}
+                    x2={((line.to.c + 0.5) / numCols) * 100}
+                    y2={((line.to.r + 0.5) / numRows) * 100}
+                    stroke="#1A1410"
+                    strokeWidth="0.7"
+                    strokeLinecap="round"
+                  />
+                );
+              })}
+
+              {/* Si hay rotuladores activos: Recorrido central tenue de guía (sin arcos de giro) */}
+              {(leftPenEnabled || rightPenEnabled) && penLines.map((line, idx) => {
+                if (line.type === 'ARC') return null; // El recorrido no lleva radio de giro
+                return (
+                  <line
+                    key={`center_line_${idx}`}
+                    x1={((line.from.c + 0.5) / numCols) * 100}
+                    y1={((line.from.r + 0.5) / numRows) * 100}
+                    x2={((line.to.c + 0.5) / numCols) * 100}
+                    y2={((line.to.r + 0.5) / numRows) * 100}
+                    stroke="#B0BEC5"
+                    strokeWidth="0.4"
+                    strokeDasharray="1,1"
+                    opacity="0.6"
+                  />
+                );
+              })}
+
+              {/* Capa 2: Rueda Izquierda (Rotulador Izquierdo - CON arcos de giro) */}
+              {leftPenEnabled && penLines.map((line, idx) => {
+                const distPctX = (0.22 / numCols) * 100;
+                const distPctY = (0.22 / numRows) * 100;
+                if (line.type === 'ARC') {
+                  const cxPct = ((line.cell.c + 0.5) / numCols) * 100;
+                  const cyPct = ((line.cell.r + 0.5) / numRows) * 100;
+                  const dFrom = DIRECTIONS[line.fromDir] || DIRECTIONS[0];
+                  const dTo = DIRECTIONS[line.toDir] || DIRECTIONS[0];
+                  const normFromX = dFrom.dy * distPctX;
+                  const normFromY = -dFrom.dx * distPctY;
+                  const normToX = dTo.dy * distPctX;
+                  const normToY = -dTo.dx * distPctY;
+                  const x1 = cxPct + normFromX;
+                  const y1 = cyPct + normFromY;
+                  const x2 = cxPct + normToX;
+                  const y2 = cyPct + normToY;
+                  const ctrlX = cxPct + normFromX + normToX;
+                  const ctrlY = cyPct + normFromY + normToY;
+                  return (
+                    <path
+                      key={`left_arc_${idx}`}
+                      d={`M ${x1} ${y1} Q ${ctrlX} ${ctrlY} ${x2} ${y2}`}
+                      fill="none"
+                      stroke={leftPenColor || '#6D4C41'}
+                      strokeWidth="0.9"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  );
+                }
+                const p1x = ((line.from.c + 0.5) / numCols) * 100;
+                const p1y = ((line.from.r + 0.5) / numRows) * 100;
+                const p2x = ((line.to.c + 0.5) / numCols) * 100;
+                const p2y = ((line.to.r + 0.5) / numRows) * 100;
+                const dx = p2x - p1x;
+                const dy = p2y - p1y;
+                const len = Math.hypot(dx, dy) || 1;
+                const normX = (dy / len) * distPctX;
+                const normY = (-dx / len) * distPctY;
+                return (
+                  <line
+                    key={`left_line_${idx}`}
+                    x1={p1x + normX}
+                    y1={p1y + normY}
+                    x2={p2x + normX}
+                    y2={p2y + normY}
+                    stroke={leftPenColor || '#6D4C41'}
+                    strokeWidth="0.9"
+                    strokeLinecap="round"
+                  />
+                );
+              })}
+
+              {/* Capa 3: Rueda Derecha (Rotulador Derecho - CON arcos de giro) */}
+              {rightPenEnabled && penLines.map((line, idx) => {
+                const distPctX = (0.22 / numCols) * 100;
+                const distPctY = (0.22 / numRows) * 100;
+                if (line.type === 'ARC') {
+                  const cxPct = ((line.cell.c + 0.5) / numCols) * 100;
+                  const cyPct = ((line.cell.r + 0.5) / numRows) * 100;
+                  const dFrom = DIRECTIONS[line.fromDir] || DIRECTIONS[0];
+                  const dTo = DIRECTIONS[line.toDir] || DIRECTIONS[0];
+                  const normFromX = -dFrom.dy * distPctX;
+                  const normFromY = dFrom.dx * distPctY;
+                  const normToX = -dTo.dy * distPctX;
+                  const normToY = dTo.dx * distPctY;
+                  const x1 = cxPct + normFromX;
+                  const y1 = cyPct + normFromY;
+                  const x2 = cxPct + normToX;
+                  const y2 = cyPct + normToY;
+                  const ctrlX = cxPct + normFromX + normToX;
+                  const ctrlY = cyPct + normFromY + normToY;
+                  return (
+                    <path
+                      key={`right_arc_${idx}`}
+                      d={`M ${x1} ${y1} Q ${ctrlX} ${ctrlY} ${x2} ${y2}`}
+                      fill="none"
+                      stroke={rightPenColor || '#2E7D32'}
+                      strokeWidth="0.9"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  );
+                }
+                const p1x = ((line.from.c + 0.5) / numCols) * 100;
+                const p1y = ((line.from.r + 0.5) / numRows) * 100;
+                const p2x = ((line.to.c + 0.5) / numCols) * 100;
+                const p2y = ((line.to.r + 0.5) / numRows) * 100;
+                const dx = p2x - p1x;
+                const dy = p2y - p1y;
+                const len = Math.hypot(dx, dy) || 1;
+                const normX = (-dy / len) * distPctX;
+                const normY = (dx / len) * distPctY;
+                return (
+                  <line
+                    key={`right_line_${idx}`}
+                    x1={p1x + normX}
+                    y1={p1y + normY}
+                    x2={p2x + normX}
+                    y2={p2y + normY}
+                    stroke={rightPenColor || '#2E7D32'}
+                    strokeWidth="0.9"
+                    strokeLinecap="round"
+                  />
+                );
+              })}
             </svg>
           )}
 

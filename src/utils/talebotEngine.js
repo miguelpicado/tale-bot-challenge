@@ -18,6 +18,8 @@ export const COMMAND_TYPES = {
   CLEAR: { id: 'CLEAR', name: 'Borrar', color: '#FFFFFF', textColor: '#0F172A', icon: '🗑️', ledColor: '#FFFFFF', key: 'DEL' },
   PEN_DOWN: { id: 'PEN_DOWN', name: 'Bajar Rotulador', color: '#14B8A6', textColor: '#FFFFFF', icon: '🖊️', ledColor: '#2DD4BF', key: 'P' },
   PEN_UP: { id: 'PEN_UP', name: 'Subir Rotulador', color: '#64748B', textColor: '#FFFFFF', icon: '✍️', ledColor: '#94A3B8', key: 'U' },
+  BRAZOS: { id: 'BRAZOS', name: 'Poner Brazos 🦾', color: '#F97316', textColor: '#FFFFFF', icon: '🦾', ledColor: '#FB923C', key: 'A' },
+  ALAS: { id: 'ALAS', name: 'Poner Alas 🪽', color: '#3B82F6', textColor: '#FFFFFF', icon: '🪽', ledColor: '#60A5FA', key: 'W' },
 };
 
 // Obstáculos y pasadas intermedias recortables.
@@ -56,7 +58,7 @@ export const COMMAND_DURATION = {
   BACKWARD: 680,
   TURN_LEFT: 440,
   TURN_RIGHT: 440,
-  DANCE: 1500,
+  DANCE: 2000,
   SOUND: 520,
   LOOP: 200,
   PEN_DOWN: 360,
@@ -90,8 +92,13 @@ export function expandLoopCommands(rawCommands) {
 
   for (let i = 0; i < rawCommands.length; i++) {
     const cmd = rawCommands[i];
-    if (cmd.id === 'LOOP') {
-      expanded.push(...historyBeforeLoop);
+    const cmdId = typeof cmd === 'string' ? cmd : (cmd?.id || cmd);
+
+    if (cmdId === 'LOOP') {
+      if (historyBeforeLoop.length > 0) {
+        // Cada pulsación del botón Bucle (LOOP) repite la secuencia previa exactamente 1 vez
+        expanded.push(...historyBeforeLoop);
+      }
     } else {
       expanded.push(cmd);
       historyBeforeLoop.push(cmd);
@@ -189,11 +196,12 @@ export function simulatePath(start, rawCommands, numRows = 4, numCols = 5) {
 
   commands.forEach((cmd, idx) => {
     if (isOutOfBounds) return;
+    const cmdId = typeof cmd === 'string' ? cmd : (cmd?.id || cmd);
 
     const prevR = currR;
     const prevC = currC;
 
-    switch (cmd.id) {
+    switch (cmdId) {
       case 'FORWARD': {
         const dirObj = DIRECTIONS[currDir];
         const nextR = currR + dirObj.dy;
@@ -203,7 +211,13 @@ export function simulatePath(start, rawCommands, numRows = 4, numCols = 5) {
           currR = nextR;
           currC = nextC;
           visitedCells.add(`${currR},${currC}`);
-          penLines.push({ from: { r: prevR, c: prevC }, to: { r: currR, c: currC }, step: idx + 1 });
+          penLines.push({
+            type: 'LINE',
+            from: { r: prevR, c: prevC },
+            to: { r: currR, c: currC },
+            dir: currDir,
+            step: idx + 1
+          });
         } else {
           isOutOfBounds = true;
         }
@@ -218,18 +232,44 @@ export function simulatePath(start, rawCommands, numRows = 4, numCols = 5) {
           currR = nextR;
           currC = nextC;
           visitedCells.add(`${currR},${currC}`);
-          penLines.push({ from: { r: prevR, c: prevC }, to: { r: currR, c: currC }, step: idx + 1 });
+          penLines.push({
+            type: 'LINE',
+            from: { r: prevR, c: prevC },
+            to: { r: currR, c: currC },
+            dir: (currDir + 2) % 4,
+            step: idx + 1
+          });
         } else {
           isOutOfBounds = true;
         }
         break;
       }
-      case 'TURN_LEFT':
+      case 'TURN_LEFT': {
+        const prevDir = currDir;
         currDir = turnLeftDir(currDir);
+        penLines.push({
+          type: 'ARC',
+          arcType: 'TURN_LEFT',
+          cell: { r: currR, c: currC },
+          fromDir: prevDir,
+          toDir: currDir,
+          step: idx + 1
+        });
         break;
-      case 'TURN_RIGHT':
+      }
+      case 'TURN_RIGHT': {
+        const prevDir = currDir;
         currDir = turnRightDir(currDir);
+        penLines.push({
+          type: 'ARC',
+          arcType: 'TURN_RIGHT',
+          cell: { r: currR, c: currC },
+          fromDir: prevDir,
+          toDir: currDir,
+          step: idx + 1
+        });
         break;
+      }
       case 'PEN_DOWN':
         isPenDown = true;
         break;
@@ -246,7 +286,7 @@ export function simulatePath(start, rawCommands, numRows = 4, numCols = 5) {
       dir: currDir,
       penDown: isPenDown,
       step: idx + 1,
-      commandId: cmd.id
+      commandId: cmdId
     });
   });
 
@@ -322,29 +362,96 @@ export function solveNavigationPath(start, end, obstacles = [], numRows = 4, num
   return null;
 }
 
-export const SHAPE_PRESETS = [
-  {
-    id: 'cuadrado_loop',
-    category: 'Figuras',
-    name: 'Cuadrado Bucle 🔁',
-    description: 'Cuadrado perfecto con el botón Bucle',
-    start: { r: 2, c: 0, dir: 0 },
-    commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.LOOP, COMMAND_TYPES.DANCE]
-  },
-  {
-    id: 'cuadrado',
-    category: 'Figuras',
-    name: 'Cuadrado 🔲',
-    description: 'Cuadrado de 2x2 casillas',
-    start: { r: 2, c: 0, dir: 0 },
-    commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE]
-  },
-  {
-    id: 'letra_L',
-    category: 'Letras',
-    name: 'Letra L 🇱',
-    description: 'Letra L mayúscula',
-    start: { r: 0, c: 0, dir: 2 },
-    commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_LEFT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE]
+export function solvePathWithWaypoints(start, end, waypoints = [], obstacles = [], numRows = 4, numCols = 5) {
+  if (!waypoints || waypoints.length === 0) {
+    return solveNavigationPath(start, end, obstacles, numRows, numCols);
   }
+
+  let currentStart = { ...start };
+  const fullPath = [];
+
+  for (let i = 0; i < waypoints.length; i++) {
+    const wp = waypoints[i];
+    const segment = solveNavigationPath(currentStart, wp, obstacles, numRows, numCols);
+    if (!segment) return null;
+
+    fullPath.push(...segment);
+
+    if (wp.type === 'FIESTA') {
+      fullPath.push(COMMAND_TYPES.DANCE);
+    } else if (wp.type === 'VOZ') {
+      fullPath.push(COMMAND_TYPES.SOUND);
+    }
+
+    const sim = simulatePath(currentStart, segment, numRows, numCols);
+    currentStart = sim.endPosition;
+  }
+
+  const finalSegment = solveNavigationPath(currentStart, end, obstacles, numRows, numCols);
+  if (!finalSegment) return null;
+
+  fullPath.push(...finalSegment);
+  return fullPath;
+}
+
+export const SHAPE_PRESETS = [
+  // --- GEOMETRÍA (12) ---
+  { id: 'cuadrado_2x2', category: 'Geometría', name: 'Cuadrado 🔲', description: 'Cuadrado de 2x2 casillas', start: { r: 3, c: 1, dir: 0 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE] },
+  { id: 'cuadrado_loop', category: 'Geometría', name: 'Cuadrado Bucle 🔁', description: 'Cuadrado perfecto con botón Bucle (3 pulsaciones)', start: { r: 3, c: 1, dir: 0 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.LOOP, COMMAND_TYPES.LOOP, COMMAND_TYPES.LOOP, COMMAND_TYPES.DANCE] },
+  { id: 'rectangulo', category: 'Geometría', name: 'Rectángulo ▭', description: 'Rectángulo alargado de 3x1 casillas', start: { r: 3, c: 0, dir: 0 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE] },
+  { id: 'triangulo', category: 'Geometría', name: 'Triángulo Escaleno 📐', description: 'Trazo triangular en rejilla', start: { r: 3, c: 0, dir: 0 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE] },
+  { id: 'rombo', category: 'Geometría', name: 'Rombo Diamond ♦️', description: 'Figura en diamante', start: { r: 2, c: 0, dir: 0 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE] },
+  { id: 'cruz', category: 'Geometría', name: 'Cruz Simón ➕', description: 'Cruz de cuatro brazos', start: { r: 2, c: 2, dir: 0 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.BACKWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.BACKWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.BACKWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE] },
+  { id: 'escalera', category: 'Geometría', name: 'Escalera 🪜', description: 'Peldaños escalonados hacia arriba', start: { r: 3, c: 0, dir: 0 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_LEFT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE] },
+  { id: 'espiral_cuadrada', category: 'Geometría', name: 'Espiral 🌀', description: 'Espiral envolvente hacia el centro', start: { r: 3, c: 0, dir: 0 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE] },
+  { id: 'marco_exterior', category: 'Geometría', name: 'Marco Grande 🔲', description: 'Perímetro exterior del tapete', start: { r: 3, c: 0, dir: 0 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE] },
+  { id: 'letra_U_geo', category: 'Geometría', name: 'Canal en U 🪣', description: 'Trazo abierto en forma de U', start: { r: 0, c: 0, dir: 2 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_LEFT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_LEFT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE] },
+  { id: 'doble_cuadrado', category: 'Geometría', name: 'Gemelos ♊️', description: 'Dos cuadrados adyacentes', start: { r: 3, c: 0, dir: 0 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE] },
+  { id: 'laberinto_z', category: 'Geometría', name: 'Zig-Zag Z ⚡️', description: 'Trazo en zigzag horizontal', start: { r: 3, c: 0, dir: 1 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_LEFT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE] },
+
+  // --- LETRAS (12) ---
+  { id: 'letra_L', category: 'Letras', name: 'Letra L 🇱', description: 'Letra L mayúscula', start: { r: 0, c: 0, dir: 2 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_LEFT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE] },
+  { id: 'letra_F', category: 'Letras', name: 'Letra F 🇫', description: 'Letra F con dos brazos', start: { r: 3, c: 0, dir: 0 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.BACKWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_LEFT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE] },
+  { id: 'letra_H', category: 'Letras', name: 'Letra H 🇭', description: 'Letra H de dos columnas', start: { r: 3, c: 0, dir: 0 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.BACKWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_LEFT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.BACKWARD, COMMAND_TYPES.BACKWARD, COMMAND_TYPES.DANCE] },
+  { id: 'letra_E', category: 'Letras', name: 'Letra E 🇪', description: 'Letra E mayúscula', start: { r: 3, c: 1, dir: 0 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.BACKWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_LEFT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.BACKWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_LEFT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE] },
+  { id: 'letra_T', category: 'Letras', name: 'Letra T 🇹', description: 'Letra T mayúscula', start: { r: 3, c: 1, dir: 0 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_LEFT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.BACKWARD, COMMAND_TYPES.BACKWARD, COMMAND_TYPES.DANCE] },
+  { id: 'letra_C', category: 'Letras', name: 'Letra C 🇨', description: 'Letra C abierta a la derecha', start: { r: 0, c: 2, dir: 3 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_LEFT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_LEFT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE] },
+  { id: 'letra_U', category: 'Letras', name: 'Letra U 🇺', description: 'Letra U mayúscula', start: { r: 0, c: 0, dir: 2 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_LEFT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_LEFT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE] },
+  { id: 'letra_O', category: 'Letras', name: 'Letra O 🇴', description: 'Letra O cerrada', start: { r: 3, c: 1, dir: 0 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE] },
+  { id: 'letra_P', category: 'Letras', name: 'Letra P 🇵', description: 'Letra P con bucle superior', start: { r: 3, c: 0, dir: 0 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE] },
+  { id: 'letra_I', category: 'Letras', name: 'Letra I 🇮', description: 'Letra I recta con bases', start: { r: 3, c: 1, dir: 0 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE] },
+  { id: 'letra_J', category: 'Letras', name: 'Letra J 🇯', description: 'Letra J con gancho inferior', start: { r: 0, c: 2, dir: 2 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE] },
+  { id: 'letra_Z', category: 'Letras', name: 'Letra Z 🇿', description: 'Letra Z con trazo en zapatilla', start: { r: 0, c: 0, dir: 1 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.TURN_LEFT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_LEFT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE] },
+
+  // --- NÚMEROS (10) ---
+  { id: 'num_0', category: 'Números', name: 'Número 0 0️⃣', description: 'Cero en forma rectangular', start: { r: 3, c: 1, dir: 0 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE] },
+  { id: 'num_1', category: 'Números', name: 'Número 1 1️⃣', description: 'Uno vertical directo', start: { r: 3, c: 1, dir: 0 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE] },
+  { id: 'num_2', category: 'Números', name: 'Número 2 2️⃣', description: 'Dos con base horizontal', start: { r: 0, c: 0, dir: 1 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_LEFT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE] },
+  { id: 'num_3', category: 'Números', name: 'Número 3 3️⃣', description: 'Tres con doble curva', start: { r: 0, c: 0, dir: 1 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.BACKWARD, COMMAND_TYPES.TURN_LEFT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE] },
+  { id: 'num_4', category: 'Números', name: 'Número 4 4️⃣', description: 'Cuatro en silla invertida', start: { r: 0, c: 0, dir: 2 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_LEFT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.BACKWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE] },
+  { id: 'num_5', category: 'Números', name: 'Número 5 5️⃣', description: 'Cinco con techo y barriga', start: { r: 0, c: 2, dir: 3 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_LEFT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_LEFT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE] },
+  { id: 'num_6', category: 'Números', name: 'Número 6 6️⃣', description: 'Seis con panza inferior', start: { r: 0, c: 2, dir: 3 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_LEFT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_LEFT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_LEFT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_LEFT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE] },
+  { id: 'num_7', category: 'Números', name: 'Número 7 7️⃣', description: 'Siete con visera horizontal', start: { r: 0, c: 0, dir: 1 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE] },
+  { id: 'num_8', category: 'Números', name: 'Número 8 8️⃣', description: 'Ocho en doble bucle', start: { r: 3, c: 1, dir: 0 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_LEFT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_LEFT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_LEFT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE] },
+  { id: 'num_9', category: 'Números', name: 'Número 9 9️⃣', description: 'Nueve con cabeza redonda', start: { r: 2, c: 0, dir: 0 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE] },
+
+  // --- SÍMBOLOS (8) ---
+  { id: 'sim_flecha', category: 'Símbolos', name: 'Flecha Directa ➔', description: 'Flecha apuntando a la meta', start: { r: 3, c: 0, dir: 1 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE] },
+  { id: 'sim_rayo', category: 'Símbolos', name: 'Rayo ⚡️', description: 'Rayo en tres quiebros', start: { r: 3, c: 0, dir: 0 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_LEFT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE] },
+  { id: 'sim_corazon', category: 'Símbolos', name: 'Corazón 🧡', description: 'Vértice y arcos de corazón', start: { r: 3, c: 1, dir: 0 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE] },
+  { id: 'sim_estrella', category: 'Símbolos', name: 'Estrella Trazo ⭐️', description: 'Estrella en cruz con brazos', start: { r: 2, c: 1, dir: 0 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.BACKWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.BACKWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.BACKWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE] },
+  { id: 'sim_corona', category: 'Símbolos', name: 'Corona 👑', description: 'Corona de 3 picos', start: { r: 3, c: 0, dir: 0 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_LEFT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE] },
+  { id: 'sim_ancla', category: 'Símbolos', name: 'Ancla Pirata ⚓️', description: 'Ancla marítima', start: { r: 0, c: 1, dir: 2 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_LEFT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.BACKWARD, COMMAND_TYPES.BACKWARD, COMMAND_TYPES.DANCE] },
+  { id: 'sim_llave', category: 'Símbolos', name: 'Llave Secreta 🔑', description: 'Llave de castillo', start: { r: 3, c: 0, dir: 0 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE] },
+  { id: 'sim_escudo', category: 'Símbolos', name: 'Escudo 🛡️', description: 'Escudo protector', start: { r: 3, c: 0, dir: 0 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE] },
+
+  // --- DIBUJOS (8) ---
+  { id: 'dib_casita', category: 'Dibujos', name: 'Casita 🏠', description: 'Paredes y tejado de casita', start: { r: 3, c: 1, dir: 0 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE] },
+  { id: 'dib_coche', category: 'Dibujos', name: 'Coche 🚗', description: 'Chasis de automóvil', start: { r: 3, c: 0, dir: 1 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_LEFT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_LEFT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE] },
+  { id: 'dib_barco', category: 'Dibujos', name: 'Barco ⛵️', description: 'Casco y mástil de velero', start: { r: 3, c: 0, dir: 1 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_LEFT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_LEFT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE] },
+  { id: 'dib_arbol', category: 'Dibujos', name: 'Árbol 🌲', description: 'Tronco y copa de pino', start: { r: 3, c: 1, dir: 0 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_LEFT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.BACKWARD, COMMAND_TYPES.BACKWARD, COMMAND_TYPES.DANCE] },
+  { id: 'dib_sol', category: 'Dibujos', name: 'Sol ☀️', description: 'Sol central con rayos', start: { r: 2, c: 2, dir: 0 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.BACKWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.BACKWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE] },
+  { id: 'dib_pez', category: 'Dibujos', name: 'Pez 🐟', description: 'Cuerpo y cola de pez', start: { r: 2, c: 0, dir: 1 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE] },
+  { id: 'dib_bandera', category: 'Dibujos', name: 'Bandera 🚩', description: 'Mástil y estandarte', start: { r: 3, c: 0, dir: 0 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE] },
+  { id: 'dib_robot', category: 'Dibujos', name: 'Robot 🤖', description: 'Cabeza y antena TaleBot', start: { r: 3, c: 1, dir: 0 }, commands: [COMMAND_TYPES.PEN_DOWN, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.TURN_RIGHT, COMMAND_TYPES.FORWARD, COMMAND_TYPES.FORWARD, COMMAND_TYPES.DANCE] }
 ];
