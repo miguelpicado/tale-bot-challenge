@@ -25,3 +25,8 @@ dist-ssr
 
 # Playwright MCP scratch output
 .playwright-mcp/
+
+# Baseline (harness phase 4): secrets
+.env
+*.key
+*.pem
